@@ -1,0 +1,115 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String         @id @default(uuid())
+  role          String         @default("STUDENT") // ADMIN, STUDENT
+  phone         String?        @unique
+  passwordHash  String?
+  createdAt     DateTime       @default(now())
+  studentAccess Student?
+  notifications Notification[]
+}
+
+model Student {
+  id              String               @id @default(uuid())
+  user            User                 @relation(fields: [userId], references: [id])
+  userId          String               @unique
+  studentId       String               @unique
+  fullName        String
+  age             Int
+  batchType       String               // BEGINNER, INTERMEDIATE, ADVANCED
+  coachName       String?
+  contactDetails  String?
+  enrollmentStatus String  @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, GRADUATED
+  bio             String?  @default("Aspiring Table Tennis Athlete")
+  socialTwitter   String?
+  socialInsta     String?
+  fees            AcademyFee[]
+  tournaments     TournamentPayment[]
+  chatMessages    ChatMessage[]        @relation("SentMessages")
+}
+
+model AcademyFee {
+  id             String    @id @default(uuid())
+  student        Student   @relation(fields: [studentId], references: [id])
+  studentId      String
+  amount         Float
+  dueDate        DateTime
+  status         String    @default("DUE") // PAID, DUE, OVERDUE
+  interval       String    @default("MONTHLY") // MONTHLY, QUARTERLY, YEARLY, ONE_TIME
+  paymentDate    DateTime?
+  receiptUrl     String?
+  qrCodeHash     String?
+  method         String?   // UPI, CARD, CASH
+}
+
+model Tournament {
+  id                  String               @id @default(uuid())
+  name                String
+  date                DateTime
+  venue               String
+  level               String
+  entryFee            Float
+  eligibilityCriteria String?
+  createdAt           DateTime             @default(now())
+  participants        TournamentPayment[]
+}
+
+model TournamentPayment {
+  id                  String     @id @default(uuid())
+  student             Student    @relation(fields: [studentId], references: [id])
+  studentId           String
+  tournament          Tournament @relation(fields: [tournamentId], references: [id])
+  tournamentId        String
+  amountPaid          Float
+  paymentStatus       String     @default("PENDING") // PAID, PENDING
+  paymentDate         DateTime?
+  confirmationDetails String?
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  type       String   // FEE, TOURNAMENT, GENERAL
+  message    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Broadcast {
+  id         String   @id @default(uuid())
+  title      String
+  message    String
+  author     String   @default("Academy Admin")
+  category   String   @default("GENERAL") // GENERAL, TOURNAMENT, HOLIDAY, URGENT
+  createdAt  DateTime @default(now())
+}
+
+model ChatMessage {
+  id         String   @id @default(uuid())
+  content    String?
+  sender     Student? @relation("SentMessages", fields: [senderId], references: [id])
+  senderId   String?
+  senderName String
+  isAdmin    Boolean  @default(false)
+  
+  // Scoping: If isGlobal=true, category is ignored. If recipientId exists, it's private.
+  category    String   // GLOBAL, BATCH, PRIVATE
+  batchType   String?  // Filters chat for BEGINNER, INTERMEDIATE, ADVANCED
+  recipientId String?  // ID of the student receiving the message (if PRIVATE)
+
+  // Multimedia assets
+  fileUrl    String?
+  fileName   String?
+  fileType   String?  // IMAGE, PDF, DOCUMENT
+  
+  createdAt  DateTime @default(now())
+}
