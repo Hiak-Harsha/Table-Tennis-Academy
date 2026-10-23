@@ -13,6 +13,7 @@ import {
 import { hashPassword, verifyAndMigratePassword } from '@/lib/password'
 import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit'
 import { writeAuditLog } from '@/lib/audit'
+import { sanitizeText } from '@/lib/sanitize'
 
 const UnifiedLoginSchema = z.object({
   identifier: z.string().min(1, 'Please enter your ID or mobile number.').trim(),
@@ -21,7 +22,11 @@ const UnifiedLoginSchema = z.object({
 })
 
 const RegisterSchema = z.object({
-  fullName: z.string().min(2, 'Full name required (minimum 2 characters).').trim(),
+  fullName: z
+    .string()
+    .min(2, 'Full name required (minimum 2 characters).')
+    .trim()
+    .transform(sanitizeText),
   phone: z.string().regex(/^\d{10}$/, 'Valid 10-digit mobile number required.'),
   password: z.string().min(8, 'Password must be at least 8 characters long.'),
   age: z.preprocess((v) => Number(v), z.number().min(5, 'Minimum age is 5').max(70, 'Maximum age is 70')),

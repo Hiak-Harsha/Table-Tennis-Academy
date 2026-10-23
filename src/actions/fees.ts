@@ -4,14 +4,8 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin, requireAny } from '@/lib/auth-guard'
 import { rupeesToPaise, formatINR } from '@/lib/currency'
+import { FeeSchema } from '@/lib/validations'
 import { z } from 'zod'
-
-const FeeSchema = z.object({
-  studentId: z.string().uuid(),
-  amount: z.preprocess((v) => Number(v), z.number().min(1, 'Amount must be positive')),
-  dueDate: z.string().transform((v) => new Date(v)),
-  interval: z.enum(['MONTHLY', 'QUARTERLY', 'YEARLY', 'ONE_TIME']).default('MONTHLY'),
-})
 
 export async function addFeeAction(prevState: any, formData: FormData) {
   try {

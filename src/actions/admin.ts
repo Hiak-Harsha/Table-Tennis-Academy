@@ -5,41 +5,26 @@ import { revalidatePath } from 'next/cache'
 import { requireAdmin, requireAny } from '@/lib/auth-guard'
 import { hashPassword } from '@/lib/password'
 import { rupeesToPaise } from '@/lib/currency'
+import {
+  StudentRegistrationSchema,
+  TournamentSchema,
+  BroadcastSchema,
+} from '@/lib/validations'
 import { z } from 'zod'
-
-// Validation Schemas
-const StudentSchema = z.object({
-  name: z.string().min(2, 'Full name required'),
-  batch: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']),
-  age: z.preprocess((v) => Number(v), z.number().min(5).max(70)),
-  phone: z.string().regex(/^\d{10}$/, '10-digit phone number required'),
-  password: z.string().min(8, 'Security Threshold: Password must be 8+ characters.'),
-  coachName: z.string().optional(),
-  contactDetails: z.string().optional(),
-})
-
-const TournamentSchema = z.object({
-  name: z.string().min(3),
-  venue: z.string().min(3),
-  level: z.string(),
-  entryFee: z.preprocess((v) => Number(v), z.number().min(0)),
-  date: z.string().transform((v) => new Date(v)),
-  eligibility: z.string().optional(),
-})
 
 export async function createStudentAction(prevState: any, formData: FormData) {
   try {
     await requireAdmin()
 
     // Validate inputs
-    const validated = StudentSchema.parse({
+    const validated = StudentRegistrationSchema.parse({
       name: formData.get('name'),
       batch: formData.get('batch'),
       age: formData.get('age'),
       phone: formData.get('phone'),
       password: formData.get('password'),
-      coachName: formData.get('coachName'),
-      contactDetails: formData.get('contactDetails'),
+      coachName: formData.get('coachName') || undefined,
+      contactDetails: formData.get('contactDetails') || undefined,
     })
 
     const studentIdStr = 'TTA-' + Math.floor(1000 + Math.random() * 9000)
@@ -67,8 +52,8 @@ export async function createStudentAction(prevState: any, formData: FormData) {
           batchType: validated.batch,
           coachName: validated.coachName || null,
           contactDetails: validated.contactDetails || null,
-          enrollmentStatus: 'ACTIVE'
-        }
+          enrollmentStatus: 'ACTIVE',
+        },
       })
     })
 
@@ -84,65 +69,71 @@ export async function createStudentAction(prevState: any, formData: FormData) {
 export async function updateStudentAction(prevState: any, formData: FormData) {
   try {
     await requireAdmin()
-    
-    const id = formData.get('id') as string;
-    const validated = StudentSchema.partial().parse({
+
+    const id = formData.get('id') as string
+    const validated = StudentRegistrationSchema.partial().parse({
       name: formData.get('fullName'),
       batch: formData.get('batchType'),
       age: formData.get('age'),
-      coachName: formData.get('coachName'),
-      contactDetails: formData.get('contactDetails')
+      coachName: formData.get('coachName') || undefined,
+      contactDetails: formData.get('contactDetails') || undefined,
     })
-    const enrollmentStatus = formData.get('enrollmentStatus') as string;
+    const enrollmentStatus = (formData.get('enrollmentStatus') as string) || 'ACTIVE'
 
     await prisma.student.update({
       where: { id },
-      data: { 
-        fullName: validated.name, 
-        batchType: validated.batch, 
+      data: {
+        fullName: validated.name,
+        batchType: validated.batch,
         age: validated.age,
         coachName: validated.coachName || null,
         contactDetails: validated.contactDetails || null,
-        enrollmentStatus
-      }
-    });
+        enrollmentStatus,
+      },
+    })
 
-    revalidatePath('/admin/students');
-    revalidatePath('/admin');
-    return { success: 'Student profile updated successfully.' };
-  } catch(error: any) {
+    revalidatePath('/admin/students')
+    revalidatePath('/admin')
+    return { success: 'Student profile updated successfully.' }
+  } catch (error: any) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
-    return { error: `Update failed: ${error?.message || 'Unknown error'}` };
+    return { error: `Update failed: ${error?.message || 'Unknown error'}` }
   }
 }
 
 export async function broadcastNotificationAction(prevState: any, formData: FormData) {
   try {
     await requireAdmin()
-    
-    const message = formData.get('message') as string;
-    const title = formData.get('title') as string || 'General Announcement';
-    const category = formData.get('category') as string || 'GENERAL';
 
-    if (!message) return { error: 'Broadcast payload cannot be empty.' };
+    const validated = BroadcastSchema.parse({
+      title: formData.get('title') || 'General Announcement',
+      message: formData.get('message'),
+      category: formData.get('category') || 'GENERAL',
+    })
 
     await prisma.broadcast.create({
-      data: { title, message, category, author: 'Academy HQ' }
-    });
+      data: {
+        title: validated.title,
+        message: validated.message,
+        category: validated.category,
+        author: 'Academy HQ',
+      },
+    })
 
-    const allUsers = await prisma.user.findMany({ where: { role: 'STUDENT' } });
+    const allUsers = await prisma.user.findMany({ where: { role: 'STUDENT' } })
     const notifications = allUsers.map((u: any) => ({
       userId: u.id,
       type: 'GENERAL',
-      message: `${title}: ${message.substring(0, 50)}...`
-    }));
+      message: `${validated.title}: ${validated.message.substring(0, 50)}...`,
+    }))
 
-    await prisma.notification.createMany({ data: notifications });
-    
-    revalidatePath('/student');
-    return { success: `Broadcasted to Academy Hub and ${allUsers.length} athletes.` };
+    await prisma.notification.createMany({ data: notifications })
+
+    revalidatePath('/student')
+    return { success: `Broadcasted to Academy Hub and ${allUsers.length} athletes.` }
   } catch (error: any) {
-    return { error: error.message || 'Broadcast Protocol Failed' };
+    if (error instanceof z.ZodError) return { error: error.issues[0].message }
+    return { error: error.message || 'Broadcast Protocol Failed' }
   }
 }
 

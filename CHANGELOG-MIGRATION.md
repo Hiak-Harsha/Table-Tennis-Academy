@@ -115,3 +115,52 @@ All breaking changes, schema modifications, security updates, and URL/env variab
 - Updated all frontend displays and payment modals (`PaymentGateway`, `FeePaymentClient`, `RegisterTournamentButton`, `TournamentHubClient`, admin fee tables, dashboard revenue widgets) to display amounts formatted via `formatINR`.
 - Seed data in `prisma/seed.ts` updated to integer paise (`250000` paise for ₹2,500, `75000` paise for ₹750).
 - Added comprehensive unit test suite `tests/unit/currency.test.ts` (10 tests passing).
+
+---
+
+## Phase 3: Input Validation, Sanitization & File Upload Security (Completed)
+
+### 1. Robust Input Sanitization Engine (`src/lib/sanitize.ts`)
+- **HTML Entity Encoding (`escapeHtml`)**: Escapes characters `&`, `<`, `>`, `"`, and `'` to prevent Cross-Site Scripting (XSS).
+- **HTML Tag Stripping (`stripHtml`)**: Strips all HTML/XML elements, `<script>` tags, event handlers, and decodes escaped entities with whitespace collapsing.
+- **Text Sanitization (`sanitizeText`, `sanitizeOptionalText`)**: Strips ASCII control characters (`\x00-\x08\x0B\x0C\x0E-\x1F\x7F`), strips HTML, trims whitespace, and collapses multiple spaces.
+- **Number & Boolean Parsers**: Added `sanitizeInt` and `sanitizeBoolean` helpers for safe type conversions.
+
+### 2. Multi-Layer File Upload Security (`src/lib/file-security.ts`)
+- **Magic Byte Sniffing (`detectMagicBytes`)**: Inspects true binary buffer signatures, completely ignoring client-provided MIME types and extensions:
+  - PNG (`89 50 4E 47 0D 0A 1A 0A`)
+  - JPEG (`FF D8 FF`)
+  - WebP (`52 49 46 46 ... 57 45 42 50`)
+  - PDF (`25 50 44 46`)
+- **SVG Injection Defense**: SVGs are explicitly forbidden due to XML entity expansion and inline JavaScript execution vectors.
+- **Strict Size Limits**: Enforced 5MB maximum upload limit across all files.
+- **Filename Sanitization (`sanitizeFileName`)**: Strips path traversal attempts (`../`, `..\`), isolates basename, removes special characters, and preserves single verified lowercase extensions.
+- **Collision-Resistant Storage Keys**: Generates cryptographic UUID storage keys (`crypto.randomUUID()`) to prevent filesystem overwriting and timing enumeration attacks.
+
+### 3. Serverless-Resilient Storage Adapter (`src/lib/storage.ts`)
+- Saves validated uploads to `public/uploads` in persistent Node environments.
+- Handles read-only serverless filesystems (e.g. Vercel) gracefully by falling back to base64 Data URIs (under 2MB) or returning clear storage exceptions rather than crashing serverless invocations.
+
+### 4. Authoritative Zod Schemas (`src/lib/validations.ts`)
+- **PhoneSchema**: Strict 10-digit Indian mobile validation with control character stripping (`^[6-9]\d{9}$`).
+- **PasswordSchema**: Enforces 8-72 character passwords with ASCII printable character verification.
+- **StudentRegistrationSchema**: Validates name, phone, password, batch type, and enrollment status.
+- **TournamentSchema**: Validates tournament title, date, location, and entry fee.
+- **FeeSchema**: Validates student UUID, billing month, and rupee fee amount.
+- **ChatMessageSchema**: Validates chat sender, category, message content (with automatic sanitization), optional batch, and recipient.
+- **BroadcastSchema**: Validates urgent announcement broadcast payloads.
+
+### 5. Server Action Hardening
+- **Chat Action (`src/actions/chat.ts`)**:
+  - Replaced unvalidated disk writes with `validateUploadedFile` (magic byte verification) and `saveUploadedFile`.
+  - Applied `ChatMessageSchema` and input sanitization to all outgoing messages.
+- **Admin Actions (`src/actions/admin.ts`)**: Replaced loose casts with `StudentRegistrationSchema`, `TournamentSchema`, and `TournamentStatusSchema`.
+- **Fee Actions (`src/actions/fees.ts`)**: Replaced loose types with `FeeSchema` and safe currency conversions.
+- **Auth Actions (`src/actions/auth.ts`)**: Enforced `PhoneSchema` and `PasswordSchema` on login and registration endpoints.
+
+### 6. Test Suite Expansion
+- Added 3 new unit test suites (25 new tests; total 71/71 tests passing):
+  - `tests/unit/sanitize.test.ts` (5 tests): XSS escaping, tag removal, control character stripping, whitespace collapsing.
+  - `tests/unit/file-security.test.ts` (11 tests): Magic byte sniffing, extension matching, SVG rejection, size limits, path traversal defense.
+  - `tests/unit/validations.test.ts` (9 tests): Phone number format, password length, schema edge cases.
+
