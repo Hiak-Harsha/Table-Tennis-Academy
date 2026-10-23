@@ -79,8 +79,10 @@ export function detectMagicBytes(buffer: Buffer): { mimeType: string; fileType: 
  * Strips path traversal sequences, control chars, and dangerous extensions from original filename
  */
 export function sanitizeFileName(rawName: string): string {
-  const ext = path.extname(rawName)
-  const nameWithoutExt = path.basename(rawName, ext)
+  // Normalize both forward and backward slashes for cross-platform POSIX/Windows safety
+  const normalized = rawName.replace(/\\/g, '/')
+  const ext = path.extname(normalized)
+  const nameWithoutExt = path.basename(normalized, ext)
   const sanitizedName = nameWithoutExt
     .replace(/[^a-zA-Z0-9_-]/g, '_')
     .replace(/_+/g, '_')

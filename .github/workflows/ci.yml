@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-
 jobs:
   validate:
     name: Lint, Typecheck, Test & Build
@@ -39,34 +34,11 @@ jobs:
         run: npm run typecheck
 
       - name: Run Test Suite
-        run: |
-          set -o pipefail
-          npx vitest run 2>&1 | tee test-output.txt
+        run: npx vitest run
         env:
           DATABASE_URL: 'postgresql://test:test@localhost:5432/test?schema=public'
           SESSION_SECRET: 'test-secret-at-least-32-characters-long-for-testing'
           NODE_ENV: 'test'
-
-      - name: Report failure as commit comment
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            let log = 'No log file generated';
-            if (fs.existsSync('test-output.txt')) {
-              log = fs.readFileSync('test-output.txt', 'utf8').slice(-3000);
-            }
-            try {
-              await github.rest.repos.createCommitComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                commit_sha: context.sha,
-                body: '### CI Test Failure Log\n```\n' + log + '\n```'
-              });
-            } catch (e) {
-              console.log('Error creating comment:', e);
-            }
 
       - name: Build Application
         run: npm run build
