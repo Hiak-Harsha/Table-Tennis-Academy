@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import RegisterTournamentButton from '@/components/RegisterTournamentButton'
+import { formatINR } from '@/lib/currency'
 
 export default function TournamentHubClient({ 
   tournaments, 
@@ -94,7 +95,7 @@ export default function TournamentHubClient({
                       <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t.level} LEVEL</span>
                       <h3 style={{ fontSize: '1.4rem', fontWeight: 900, margin: 0 }}>{t.name}</h3>
                    </div>
-                   {!isPast && <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#10b981' }}>₹{t.entryFee.toLocaleString('en-IN')}</div>}
+                   {!isPast && <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#10b981' }}>{formatINR(t.entryFee)}</div>}
                 </div>
 
                 <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.9rem', marginBottom: '2rem', minHeight: '48px', lineHeight: 1.6 }}>

@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
 import { getCurrentUser as getSession } from '@/lib/auth-guard'
+import { formatINR } from '@/lib/currency'
 import Link from 'next/link'
 
 export default async function StudentDashboard() {
@@ -66,7 +67,7 @@ export default async function StudentDashboard() {
                 <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fees</span>
                 <span style={{ background: latestFee?.status === 'PAID' ? 'rgba(16,185,129,0.1)' : 'hsl(var(--accent-red-glow))', color: latestFee?.status === 'PAID' ? '#10b981' : 'hsl(var(--accent-red))', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{latestFee?.status || 'NONE'}</span>
               </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.2rem' }}>₹{latestFee?.amount.toLocaleString('en-IN') || '0'}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.2rem' }}>{formatINR(latestFee?.amount || 0)}</div>
               <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))', margin: 0 }}>Payment nexus active</p>
             </div>
 

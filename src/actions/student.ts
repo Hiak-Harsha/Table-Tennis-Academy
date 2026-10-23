@@ -39,9 +39,11 @@ export async function registerForTournament(prevState: any, formData: FormData) 
   try {
     const user = await requireStudent()
     const tournamentId = formData.get('tournamentId') as string
-    const amount = Number(formData.get('amount'))
 
     if (!tournamentId) return { error: 'Tournament identifier missing.' }
+
+    const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId } })
+    if (!tournament) return { error: 'Tournament not found.' }
 
     // Check if already registered
     const existing = await prisma.tournamentPayment.findFirst({
@@ -49,12 +51,12 @@ export async function registerForTournament(prevState: any, formData: FormData) 
     })
     if (existing) return { error: 'Athlete is already registered for this tournament.' }
 
-    // Security: Use authenticated session student ID
+    // Security: Use authenticated session student ID and authoritative tournament price
     await prisma.tournamentPayment.create({
       data: {
         studentId: user.student.id,
         tournamentId,
-        amountPaid: amount,
+        amountPaid: tournament.entryFee,
         paymentStatus: 'PAID',
         paymentDate: new Date(),
         confirmationDetails: 'CONFIRMED_' + tournamentId.substring(0, 5),
@@ -68,9 +70,12 @@ export async function registerForTournament(prevState: any, formData: FormData) 
   }
 }
 
-export async function registerForTournamentAction(tournamentId: string, amount: number) {
+export async function registerForTournamentAction(tournamentId: string, _amount?: number) {
   try {
     const user = await requireStudent()
+
+    const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId } })
+    if (!tournament) return { error: 'Tournament not found.' }
 
     // Check if already registered
     const existing = await prisma.tournamentPayment.findFirst({
@@ -82,7 +87,7 @@ export async function registerForTournamentAction(tournamentId: string, amount: 
       data: {
         studentId: user.student.id,
         tournamentId,
-        amountPaid: amount,
+        amountPaid: tournament.entryFee,
         paymentStatus: 'PAID',
         paymentDate: new Date(),
         confirmationDetails: 'TTA-CONF-' + Math.random().toString(36).substring(2, 8).toUpperCase(),

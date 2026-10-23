@@ -75,7 +75,7 @@ export default function RegisterWizard() {
 
       {showPayment && (
         <PaymentGateway
-          amount={4000} description="Academy Registration Fee"
+          amount={400000} description="Academy Registration Fee"
           onSuccess={onPaymentSuccess} onCancel={() => setShowPayment(false)}
         />
       )}

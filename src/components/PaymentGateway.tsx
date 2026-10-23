@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { formatINR } from '@/lib/currency'
 
 interface PaymentProps {
   amount: number
@@ -75,7 +76,7 @@ export default function PaymentGateway({ amount, description, onSuccess, onCance
             border: '1px solid hsl(var(--accent-blue))', borderRadius: '12px', 
             color: 'hsl(var(--accent-blue))', fontWeight: 900, fontSize: '1.2rem' 
           }}>
-            ₹{amount.toLocaleString('en-IN')}
+            {formatINR(amount)}
           </div>
         </div>
 

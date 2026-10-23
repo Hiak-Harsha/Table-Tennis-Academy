@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin, requireAny } from '@/lib/auth-guard'
 import { hashPassword } from '@/lib/password'
+import { rupeesToPaise } from '@/lib/currency'
 import { z } from 'zod'
 
 // Validation Schemas
@@ -163,18 +164,18 @@ export async function createTournamentAction(prevState: any, formData: FormData)
         name: validated.name,
         venue: validated.venue,
         level: validated.level,
-        entryFee: validated.entryFee,
+        entryFee: rupeesToPaise(validated.entryFee),
         eligibilityCriteria: validated.eligibility || null,
-        date: validated.date
-      }
-    });
+        date: validated.date,
+      },
+    })
 
-    revalidatePath('/admin/tournaments');
-    revalidatePath('/student/tournaments');
-    return { success: `Tournament "${validated.name}" published.` };
+    revalidatePath('/admin/tournaments')
+    revalidatePath('/student/tournaments')
+    return { success: `Tournament "${validated.name}" published.` }
   } catch (error: any) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
-    return { error: error.message || 'Failed to create tournament.' };
+    return { error: error.message || 'Failed to create tournament.' }
   }
 }
 
@@ -184,7 +185,6 @@ export async function registerForTournamentAction(prevState: any, formData: Form
 
     const tournamentId = formData.get('tournamentId') as string
     let studentId = formData.get('studentId') as string
-    const amountPaid = parseFloat(formData.get('amountPaid') as string)
 
     // Security: Only allow student to register for themselves
     if (session.role === 'STUDENT') {
@@ -194,22 +194,30 @@ export async function registerForTournamentAction(prevState: any, formData: Form
       studentId = session.internalStudentId || studentId
     }
 
-    if (!tournamentId || !studentId || !amountPaid) return { error: 'Missing registration parameters.' };
+    if (!tournamentId || !studentId) return { error: 'Missing registration parameters.' }
+
+    const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId } })
+    if (!tournament) return { error: 'Tournament not found.' }
+
+    const existing = await prisma.tournamentPayment.findFirst({
+      where: { studentId, tournamentId },
+    })
+    if (existing) return { error: 'Athlete is already registered for this tournament.' }
 
     await prisma.tournamentPayment.create({
       data: {
         tournamentId,
         studentId,
-        amountPaid,
+        amountPaid: tournament.entryFee,
         paymentStatus: 'PAID',
         paymentDate: new Date(),
-        confirmationDetails: `UPI_REF_${Math.floor(Math.random()*1000000)}`
-      }
-    });
+        confirmationDetails: `UPI_REF_${Math.floor(Math.random() * 1000000)}`,
+      },
+    })
 
-    revalidatePath('/student/tournaments');
-    return { success: 'Tournament registration successful!' };
+    revalidatePath('/student/tournaments')
+    return { success: 'Tournament registration successful!' }
   } catch (error: any) {
-    return { error: error.message || 'Registration failed' };
+    return { error: error.message || 'Registration failed' }
   }
 }

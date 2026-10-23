@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin, requireAny } from '@/lib/auth-guard'
+import { rupeesToPaise, formatINR } from '@/lib/currency'
 import { z } from 'zod'
 
 const FeeSchema = z.object({
@@ -23,10 +24,12 @@ export async function addFeeAction(prevState: any, formData: FormData) {
       interval: formData.get('interval'),
     })
 
+    const amountInPaise = rupeesToPaise(validated.amount)
+
     await prisma.academyFee.create({
       data: {
         studentId: validated.studentId,
-        amount: validated.amount,
+        amount: amountInPaise,
         dueDate: validated.dueDate,
         status: 'DUE',
         interval: validated.interval,
@@ -35,7 +38,7 @@ export async function addFeeAction(prevState: any, formData: FormData) {
 
     revalidatePath('/admin/fees')
     revalidatePath('/student/fees')
-    return { success: `Fee of ₹${validated.amount} added.` }
+    return { success: `Fee of ${formatINR(amountInPaise)} added.` }
   } catch (error: any) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
     return { error: error.message || 'Operation failed' }

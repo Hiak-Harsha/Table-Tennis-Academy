@@ -1,11 +1,13 @@
 import prisma from '@/lib/prisma'
 import CreateTournamentModal from '@/components/CreateTournamentModal'
+import { formatINR } from '@/lib/currency'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminTournaments() {
   const tournaments = await prisma.tournament.findMany({
-    orderBy: { date: 'asc' }, include: { participants: true }
+    orderBy: { date: 'asc' },
+    include: { participants: true },
   })
 
   return (
@@ -40,7 +42,7 @@ export default async function AdminTournaments() {
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#10b981' }}>₹{t.entryFee}</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#10b981' }}>{formatINR(t.entryFee)}</div>
                 <div style={{ color: 'hsl(var(--text-muted))', fontSize: '0.65rem' }}>Entry Fee</div>
               </div>
             </div>

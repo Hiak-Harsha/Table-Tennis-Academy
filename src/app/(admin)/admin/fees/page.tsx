@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
 import { FeeStatusControl, AddFeeModal } from '@/components/FeeControls'
+import { formatINR } from '@/lib/currency'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,8 +24,8 @@ export default async function AdminFeesPage() {
 
       <div className="grid-3" style={{ marginBottom: '1.25rem' }}>
         {[
-          { label: 'Collected', value: `₹${totalPaid.toLocaleString('en-IN')}`, color: '#10b981' },
-          { label: 'Outstanding', value: `₹${totalDue.toLocaleString('en-IN')}`, color: '#ef4444' },
+          { label: 'Collected', value: formatINR(totalPaid), color: '#10b981' },
+          { label: 'Outstanding', value: formatINR(totalDue), color: '#ef4444' },
           { label: 'Overdue', value: overdueCount, color: '#fb923c' },
         ].map((m, i) => (
           <div key={i} className="card" style={{ borderTop: `3px solid ${m.color}` }}>
@@ -54,7 +55,7 @@ export default async function AdminFeesPage() {
                 <td style={{ padding: '0.55rem 0.75rem', color: '#64748b', fontWeight: 700, fontSize: '0.6rem' }}>{row.interval || 'MONTHLY'}</td>
                 <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700, color: '#60a5fa', fontFamily: 'monospace', fontSize: '0.75rem' }}>{row.student.studentId}</td>
                 <td style={{ padding: '0.55rem 0.75rem', fontWeight: 600, color: '#e2e8f0', fontSize: '0.8rem' }}>{row.student.fullName}</td>
-                <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700, fontSize: '0.85rem' }}>₹{row.amount.toLocaleString('en-IN')}</td>
+                <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700, fontSize: '0.85rem' }}>{formatINR(row.amount)}</td>
                 <td style={{ padding: '0.55rem 0.75rem' }}><FeeStatusControl feeId={row.id} status={row.status} /></td>
                 <td style={{ padding: '0.55rem 0.75rem', color: '#475569', fontSize: '0.7rem' }}>{row.paymentDate ? new Date(row.paymentDate).toLocaleDateString('en-IN') : '—'}</td>
               </tr>

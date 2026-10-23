@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
+import { formatINR } from '@/lib/currency'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,7 +42,7 @@ export default async function AdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
         {[
           { label: 'Active Roster', value: studentCount, icon: '👥', color: 'hsl(var(--accent-blue))', sub: 'Registered athletes' },
-          { label: 'Revenue', value: `₹${revenueAmount.toLocaleString('en-IN')}`, icon: '💰', color: '#10b981', sub: 'Collected payments' },
+          { label: 'Revenue', value: formatINR(revenueAmount), icon: '💰', color: '#10b981', sub: 'Collected payments' },
           { label: 'Pending', value: pendingPayments, icon: '⚠️', color: '#f59e0b', sub: 'Outstanding dues' },
         ].map((m, i) => (
           <div key={i} className="card glass" style={{ borderTop: `3px solid ${m.color}` }}>

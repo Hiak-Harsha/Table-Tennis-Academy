@@ -58,7 +58,7 @@ async function main() {
     create: {
       id: 'seed-fee-001',
       studentId: studentProfile.id,
-      amount: 2500,
+      amount: 250000, // ₹2,500 in Paise
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
       status: 'DUE',
       interval: 'MONTHLY',
@@ -77,7 +77,7 @@ async function main() {
       date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       venue: 'National Sports Arena, Court 4',
       level: 'INTERMEDIATE',
-      entryFee: 750,
+      entryFee: 75000, // ₹750 in Paise
       eligibilityCriteria: 'Intermediate or Advanced ranking athletes under 25 years.',
     },
   })

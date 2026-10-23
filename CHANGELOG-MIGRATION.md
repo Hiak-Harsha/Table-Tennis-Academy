@@ -73,3 +73,45 @@ All breaking changes, schema modifications, security updates, and URL/env variab
   - `tests/unit/session.test.ts`: Token signing, signature verification, tampering detection, forged secret rejection, expiration.
   - `tests/unit/authz-matrix.test.ts`: Full RBAC matrix verification across all 16 permission combinations.
   - `tests/unit/rate-limit.test.ts`: Sliding-window attempt counting, blocking, and reset.
+
+---
+
+## Phase 2: Data Model & Schema Hardening (Completed)
+
+### 1. Integer Currency Representation (Indian Paise)
+- **Eliminated IEEE 754 Floating-Point Precision Vulnerability**: Migrated all monetary amounts in `prisma/schema.prisma` from `Float` to `Int` representing minor units (1 INR = 100 Paise):
+  - `AcademyFee.amount`: Stored in integer paise.
+  - `Tournament.entryFee`: Stored in integer paise.
+  - `TournamentPayment.amountPaid`: Stored in integer paise.
+- **Currency Utilities (`src/lib/currency.ts`)**:
+  - `rupeesToPaise(rupees)`: Converts rupee inputs to paise using `Math.round(val * 100)`, with validation against NaN, infinity, and negative numbers.
+  - `paiseToRupees(paise)`: Converts integer paise to numerical rupee units.
+  - `formatINR(paise)`: Formats paise into localized Indian Rupee currency strings (`₹1,500` or `₹1,500.50`).
+  - `formatRupees(rupees)`: Formats rupee values into localized currency strings.
+- **Price Tampering Prevention**: Server actions (`registerForTournament`, `registerForTournamentAction`) now ignore client-provided prices and fetch the authoritative `tournament.entryFee` directly from the database.
+
+### 2. Relational Integrity & Cascades
+- **Explicit `onDelete` Behaviors**:
+  - `User` -> `Student`: `onDelete: Cascade`
+  - `Student` -> `AcademyFee`: `onDelete: Restrict` (prevents deletion of student records that have fee history, protecting audit trails)
+  - `Student` -> `TournamentPayment`: `onDelete: Restrict`
+  - `Tournament` -> `TournamentPayment`: `onDelete: Restrict`
+  - `User` -> `Notification`: `onDelete: Cascade`
+  - `Student` -> `ChatMessage`: `onDelete: SetNull`
+  - `User` -> `Session`: `onDelete: Cascade`
+
+### 3. Performance & Integrity Indexes
+- Added composite and single-column indexes:
+  - `AcademyFee`: `@@index([studentId])`, `@@index([status])`, `@@index([dueDate])`
+  - `Tournament`: `@@index([date])`
+  - `TournamentPayment`: `@@index([studentId])`, `@@index([tournamentId])`, `@@unique([studentId, tournamentId])` (enforces single enrollment per athlete per tournament at the database constraint level)
+  - `Notification`: `@@index([userId, isRead])`, `@@index([createdAt])`
+  - `ChatMessage`: `@@index([category, batchType])`, `@@index([recipientId])`, `@@index([createdAt])`
+  - `Student`: `@@index([batchType])`, `@@index([enrollmentStatus])`
+
+### 4. UI & Server Action Synchronization
+- Updated `addFeeAction` in `src/actions/fees.ts` to convert rupee form inputs to integer paise via `rupeesToPaise`.
+- Updated `createTournamentAction` in `src/actions/admin.ts` to convert entry fee inputs to integer paise.
+- Updated all frontend displays and payment modals (`PaymentGateway`, `FeePaymentClient`, `RegisterTournamentButton`, `TournamentHubClient`, admin fee tables, dashboard revenue widgets) to display amounts formatted via `formatINR`.
+- Seed data in `prisma/seed.ts` updated to integer paise (`250000` paise for ₹2,500, `75000` paise for ₹750).
+- Added comprehensive unit test suite `tests/unit/currency.test.ts` (10 tests passing).

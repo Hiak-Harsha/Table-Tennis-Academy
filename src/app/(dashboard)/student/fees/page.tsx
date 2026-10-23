@@ -1,6 +1,7 @@
 import { getCurrentUser as getSession } from '@/lib/auth-guard'
 import prisma from '@/lib/prisma'
 import { FeePaymentClient } from '@/components/FeePaymentClient'
+import { formatINR } from '@/lib/currency'
 
 export default async function StudentFees() {
   const payload = await getSession()
@@ -47,7 +48,7 @@ export default async function StudentFees() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '10px', marginBottom: '1rem' }}>
               <div>
                 <div style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.1rem' }}>Total Payable</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹{mostRecent?.amount.toLocaleString('en-IN') || '0'}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{formatINR(mostRecent?.amount || 0)}</div>
               </div>
               <div style={{ width: '1px', height: '36px', background: 'rgba(255,255,255,0.08)' }} />
               <div style={{ textAlign: 'right' }}>
@@ -77,7 +78,7 @@ export default async function StudentFees() {
                 <div key={f.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '0.55rem 0.65rem', background: 'rgba(255,255,255,0.015)', borderRadius: '6px', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.75rem' }}>{new Date(f.dueDate).toLocaleDateString('en-IN')}</span>
                   <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>{f.interval || 'MONTHLY'}</span>
-                  <span style={{ textAlign: 'center', fontWeight: 700, fontSize: '0.8rem' }}>₹{f.amount}</span>
+                  <span style={{ textAlign: 'center', fontWeight: 700, fontSize: '0.8rem' }}>{formatINR(f.amount)}</span>
                   <span style={{ textAlign: 'right', fontWeight: 700, color: f.status === 'PAID' ? '#10b981' : '#f87171', fontSize: '0.7rem' }}>{f.status}</span>
                 </div>
               ))}

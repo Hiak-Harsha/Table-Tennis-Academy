@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { registerForTournamentAction } from '@/actions/admin'
 import { useToast } from './ToastProvider'
 import PaymentGateway from './PaymentGateway'
+import { formatINR } from '@/lib/currency'
 
 export default function RegisterTournamentButton({ 
   tournamentId, 
@@ -59,7 +60,7 @@ export default function RegisterTournamentButton({
           fontSize: '1rem', padding: '1.25rem'
         }}
       >
-        {isPending ? 'Processing Nexus...' : `Register for ₹${entryFee.toLocaleString('en-IN')}`}
+        {isPending ? 'Processing...' : `Register for ${formatINR(entryFee)}`}
       </button>
 
       {showGateway && (
