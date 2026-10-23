@@ -68,39 +68,39 @@ export default async function StudentDashboard() {
                 <span style={{ background: latestFee?.status === 'PAID' ? 'rgba(16,185,129,0.1)' : 'hsl(var(--accent-red-glow))', color: latestFee?.status === 'PAID' ? '#10b981' : 'hsl(var(--accent-red))', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{latestFee?.status || 'NONE'}</span>
               </div>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.2rem' }}>{formatINR(latestFee?.amount || 0)}</div>
-              <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))', margin: 0 }}>Payment nexus active</p>
+              <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>Academy subscription status</p>
             </div>
 
-            <div className="card glass" style={{ borderLeft: '4px solid hsl(var(--accent-blue))' }}>
+            <div className="card glass" style={{ borderLeft: '4px solid var(--table-blue)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Next Event</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Next Event</span>
                 <span style={{ fontSize: '0.85rem' }}>🏆</span>
               </div>
               <div style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.3rem', lineHeight: 1.3 }}>{nextTournament?.name || 'No Entries'}</div>
-              <Link href="/student/tournaments" style={{ color: 'hsl(var(--accent-blue))', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>View Events →</Link>
+              <Link href="/student/tournaments" style={{ color: 'var(--ball-orange)', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none' }}>View Events →</Link>
             </div>
           </div>
 
           {/* CTA Card */}
-          <div className="card glass" style={{ background: 'linear-gradient(135deg, hsla(220, 33%, 12%, 0.8), hsla(220, 33%, 5%, 0.8))' }}>
+          <div className="card glass" style={{ background: 'linear-gradient(135deg, rgba(10, 61, 145, 0.25), rgba(11, 14, 20, 0.8))' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
               <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '1.05rem', marginBottom: '0.3rem' }}>Athlete Circle</h3>
-                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-                  Meet other players in the {student.batchType} tier and discuss strategies.
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '0.3rem' }}>Squad Chat & Training</h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                  Connect with teammates in the {student.batchType} squad and discuss tactics with coaches.
                 </p>
                 <Link href="/student/connect" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
-                  Access Hub
+                  Open Squad Chat
                 </Link>
               </div>
-              <div style={{ fontSize: '2.5rem', opacity: 0.08, flexShrink: 0 }}>🤝</div>
+              <div style={{ fontSize: '2.5rem', opacity: 0.15, flexShrink: 0 }}>🏓</div>
             </div>
           </div>
 
-          {/* Broadcasts */}
+          {/* Academy Notice Board */}
           <div className="card">
-            <h3 style={{ fontSize: '0.85rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ fontSize: '0.9rem' }}>📣</span> Broadcasts
+            <h3 style={{ fontSize: '0.95rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '0.9rem' }}>📣</span> Academy Notice Board
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {broadcasts.length === 0 ? (

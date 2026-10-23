@@ -219,10 +219,10 @@ export async function broadcastNotificationAction(prevState: unknown, formData: 
     })
 
     revalidatePath('/student')
-    return { success: `Broadcasted to Academy Global Hub in real-time.` }
+    return { success: `Published to Academy Notice Board in real-time.` }
   } catch (error: unknown) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
-    const message = error instanceof Error ? error.message : 'Broadcast Protocol Failed'
+    const message = error instanceof Error ? error.message : 'Failed to publish announcement'
     return { error: message }
   }
 }

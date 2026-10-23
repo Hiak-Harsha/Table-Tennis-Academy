@@ -29,11 +29,11 @@ export default async function AdminDashboard() {
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <div className="animate-pulse-subtle" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>System Online</span>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Coach Desk Active</span>
           </div>
           <h1 style={{ fontSize: '1.5rem' }}>Academy Operations</h1>
           <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem', margin: 0 }}>
-            Real-time telemetry of athlete performance and operations.
+            Real-time overview of academy players, training batches, and operations.
           </p>
         </div>
       </div>
@@ -41,7 +41,7 @@ export default async function AdminDashboard() {
       {/* Key Metrics */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
         {[
-          { label: 'Active Roster', value: studentCount, icon: '👥', color: 'hsl(var(--accent-blue))', sub: 'Registered athletes' },
+          { label: 'Active Roster', value: studentCount, icon: '👥', color: 'hsl(var(--accent-blue))', sub: 'Registered players' },
           { label: 'Revenue', value: formatINR(revenueAmount), icon: '💰', color: '#10b981', sub: 'Collected payments' },
           { label: 'Pending', value: pendingPayments, icon: '⚠️', color: '#f59e0b', sub: 'Outstanding dues' },
         ].map((m, i) => (
@@ -63,7 +63,7 @@ export default async function AdminDashboard() {
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ fontSize: '0.9rem' }}>👤</span> Recent Athletes
+              <span style={{ fontSize: '0.9rem' }}>👤</span> Recent Players
             </h3>
             <Link href="/admin/students" style={{ color: 'hsl(var(--accent-blue))', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
           </div>

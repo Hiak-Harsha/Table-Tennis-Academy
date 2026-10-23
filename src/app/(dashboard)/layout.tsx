@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'hsl(var(--bg-primary))' }}>
-      <MobileHeader portalName="TTA Athlete" onMenuToggle={() => setSidebarOpen(true)} />
+      <MobileHeader portalName="TTA Player Portal" onMenuToggle={() => setSidebarOpen(true)} />
       
       <StudentSidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
       
@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           flexShrink: 0 
         }}>
           <div style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            TTA Elite · Athlete Portal · Real-time Sync Active
+            TTA Elite · Player Portal · Live Match & Training Sync
           </div>
           <NotificationBell />
         </header>
@@ -42,7 +42,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           flex: 1, 
           overflowY: 'auto'
         }}>
-          <div className="nexus-container">
+          <div className="academy-container">
             {children}
           </div>
         </div>

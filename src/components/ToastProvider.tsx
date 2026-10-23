@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, createContext, useContext, useCallback, useMemo } from 'react'
+import { useState, createContext, useContext, useCallback, useMemo } from 'react'
 
 type ToastType = 'SUCCESS' | 'ERROR' | 'INFO'
 

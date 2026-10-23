@@ -294,6 +294,45 @@ All breaking changes, schema modifications, security updates, and URL/env variab
   - `tests/unit/date.test.ts` (11 tests): `formatDate` in `Asia/Kolkata`, UTC midnight boundary shifts, `compareKolkataDates`, and `isFutureDate`.
 - Full verification gates passed: `npm test` (152 passed), `npm run lint` (0 errors), `npx tsc --noEmit` (0 errors), and `npm run build` (successful compilation and route bundling).
 
+---
 
+## Phase 7: Design System, Typography & Authentic Sport Copy Overhaul (Completed)
 
+### 1. Match Night Design Tokens (`src/styles/tokens.css`)
+- **Authentic Table Tennis Color System**: Replaced generic web templates and sci-fi neon colors with high-contrast, professional table tennis colors:
+  - `--ball-orange`: `#FF6A13` (3-star ITTF competition ball orange)
+  - `--table-blue`: `#0A3D91` (International competition table surface blue)
+  - `--table-deep`: `#061A3A` (Sub-table structural deep navy)
+  - `--net-white`: `#F5F7FA` (Regulation cotton mesh white)
+  - `--court-green`: `#0E7A4F` (Taraflex sports rubber flooring green)
+  - `--umpire-red`: `#E5334B` (Rubber paddle red / match warning)
+  - `--paddle-black`: `#0B0E14` (Carbon-blade matte black / deep background)
+- **Design Tokens**: Standardized spacing scales (`--space-1` to `--space-12`), border radii (`--radius-sm` to `--radius-full`), elevation shadows (`--elevation-1` to `--elevation-3`), and standardized transition durations (`--motion-fast`, `--motion-normal`, `--motion-deliberate`).
+- **Motion & Accessibility**: Included `@media (prefers-reduced-motion: reduce)` tokens to eliminate animations for vestibular and accessibility comfort.
 
+### 2. Typography Hierarchy (`src/app/layout.tsx`, `src/app/globals.css`)
+- **Display Headings**: Configured `Big_Shoulders` (weights 600-900) via `next/font/google` for bold, athletic display typography.
+- **Body & UI**: Configured `Barlow` (weights 400-700) for clean legibility across tables, forms, and cards.
+- **Scoreboard & Numerals**: Configured `Chakra_Petch` for digital tournament scoreboard digits, timers, and financial figures.
+- **Font Resiliency & Minimum Size Guarantee**: Purged legacy media queries that shrank body text down to 13px on mobile devices. Standardized base font to `16px` across all screen widths (`html { font-size: 16px; }`), with strict rules preventing any UI element from dropping below `12px` and inputs maintaining minimum 44px touch targets.
+
+### 3. Sci-Fi & Cyberpunk Copy Complete Overhaul
+- Purged all sci-fi, video-game, and cyberpunk jargon across all portal interfaces, replacing them with authentic, professional table tennis terminology:
+  - `"Nexus Entry"` / `"SYNC WITH HUB"` → `"Academy Sign In"` / `"Sign In"`
+  - `"OVERSEER"` / `"Command Center"` → `"COACH DESK"`
+  - `"ATHLETE"` / `"Operative"` → `"PLAYER"`
+  - `"Athlete Circle"` → `"Squad Chat & Players"`
+  - `"Broadcast Protocol"` / `"Broadcasts"` → `"Academy Notice Board"`
+  - `"Security Key"` → `"Password"`
+  - `"Manage Identity"` / `"Protocol ID"` → `"Manage Player Profile"` / `"Player ID"`
+  - `"Assigned Mentor"` → `"Assigned Coach"`
+  - `"Emergency Nexus"` → `"Emergency Contact Information"`
+  - `"Tournament Designation"` / `"Operations Date"` → `"Tournament Name"` / `"Tournament Date"`
+  - `"Confirm & Publish Event"` → `"Publish Tournament"`
+  - `"nexus-container"` → `.academy-container`
+
+### 4. Verification Gates
+- **Unit Tests**: 19 test files, 152/152 tests passed.
+- **ESLint**: 0 errors.
+- **TypeScript**: `npx tsc --noEmit` passed with 0 errors.
+- **Next.js Production Build**: `prisma generate && next build` compiled and optimized all static and dynamic routes successfully.

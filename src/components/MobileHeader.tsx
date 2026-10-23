@@ -1,7 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-
 interface MobileHeaderProps {
   onMenuToggle: () => void
   portalName: string

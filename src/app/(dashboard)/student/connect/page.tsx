@@ -33,8 +33,8 @@ export default async function PlayerDirectory() {
   return (
     <div className="animate-fade-in" style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ marginBottom: '0.75rem', flexShrink: 0 }}>
-        <h1 style={{ fontSize: '1.2rem' }}>Athlete Circle</h1>
-        <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: 0 }}>Player directory and batch chat.</p>
+        <h1 style={{ fontSize: '1.4rem' }}>Squad Chat & Players</h1>
+        <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>Academy athlete directory and real-time batch chat.</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '0.75rem', flex: 1, minHeight: 0, overflow: 'hidden' }}>

@@ -9,7 +9,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'hsl(var(--bg-primary))' }}>
-      <MobileHeader portalName="TTA Command" onMenuToggle={() => setSidebarOpen(true)} />
+      <MobileHeader portalName="TTA Coach Desk" onMenuToggle={() => setSidebarOpen(true)} />
       
       <AdminSidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
       
@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           flexShrink: 0 
         }}>
           <div style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            TTA Elite · Admin Control Panel · All Records Active
+            TTA Elite · Coach Desk & Operations
           </div>
         </header>
 
@@ -39,7 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           flex: 1, 
           overflowY: 'auto'
         }}>
-          <div className="nexus-container">
+          <div className="academy-container">
             {children}
           </div>
         </div>

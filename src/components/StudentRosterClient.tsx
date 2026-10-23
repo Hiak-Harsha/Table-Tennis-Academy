@@ -40,9 +40,9 @@ export default function StudentRosterClient({ students }: { students: Student[] 
   })
 
   const stats = [
-    { label: 'Total Athletes', value: students.length, icon: '👥', color: 'var(--accent-blue)' },
+    { label: 'Total Players', value: students.length, icon: '👥', color: 'var(--accent-blue)' },
     { label: 'Active', value: students.filter(s => s.enrollmentStatus === 'ACTIVE').length, icon: '✅', color: '#10b981' },
-    { label: 'Elite Tier', value: students.filter(s => s.batchType === 'ADVANCED').length, icon: '🏆', color: '#ef4444' },
+    { label: 'Elite Pro Tier', value: students.filter(s => s.batchType === 'ADVANCED').length, icon: '🏆', color: '#ef4444' },
     { label: 'Graduated', value: students.filter(s => s.enrollmentStatus === 'GRADUATED').length, icon: '🎓', color: '#8b5cf6' },
   ]
 
@@ -77,7 +77,7 @@ export default function StudentRosterClient({ students }: { students: Student[] 
           <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-muted))' }}>🔍</span>
           <input 
             type="text" 
-            placeholder="Search by name or student ID..."
+            placeholder="Search by player name or ID..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ ...inputStyle, width: '100%', paddingLeft: '2.5rem' }}
@@ -133,7 +133,7 @@ export default function StudentRosterClient({ students }: { students: Student[] 
                         <span style={{ fontWeight: 700 }}>{bt.label}</span>
                      </div>
                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                        <span style={{ color: 'hsl(var(--text-muted))' }}>Mentor</span>
+                        <span style={{ color: 'hsl(var(--text-muted))' }}>Coach</span>
                         <span style={{ fontWeight: 700 }}>{s.coachName || 'Unassigned'}</span>
                      </div>
                   </div>
@@ -144,7 +144,7 @@ export default function StudentRosterClient({ students }: { students: Student[] 
                        className="btn btn-secondary" 
                        style={{ fontSize: '0.8rem', padding: '0.65rem 1rem', width: '100%', fontWeight: 800, textAlign: 'center' }}
                      >
-                       ✏ Manage Identity
+                       ✏ Manage Player Profile
                      </Link>
                   </div>
                </div>
@@ -156,7 +156,7 @@ export default function StudentRosterClient({ students }: { students: Student[] 
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-subtle)' }}>
-                {['Athlete', 'Student ID', 'Batch', 'Coach', 'Status', 'Actions'].map(h => (
+                {['Player', 'Student ID', 'Batch', 'Coach', 'Status', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 900, color: 'hsl(var(--text-muted))', textTransform: 'uppercase' }}>{h}</th>
                 ))}
               </tr>

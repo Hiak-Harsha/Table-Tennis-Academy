@@ -100,14 +100,14 @@ export default function AddStudentModal() {
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Assigned Mentor</label>
-                  <input name="coachName" type="text" placeholder="Coach Name" style={inputStyle} />
+                  <label style={labelStyle}>Assigned Coach</label>
+                  <input name="coachName" type="text" placeholder="e.g. Coach Raman" style={inputStyle} />
                 </div>
               </div>
 
               <div>
-                <label style={labelStyle}>Emergency Nexus (Contact)</label>
-                <input name="contactDetails" type="text" placeholder="Contact person or email" style={inputStyle} />
+                <label style={labelStyle}>Emergency Contact Information</label>
+                <input name="contactDetails" type="text" placeholder="Guardian name or secondary phone" style={inputStyle} />
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

@@ -70,13 +70,13 @@ export default function CreateTournamentModal() {
 
             <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div>
-                <label style={labelStyle}>Tournament Designation</label>
-                <input required name="name" type="text" placeholder="e.g. Winter Smash Championship 2025" style={inputStyle} />
+                <label style={labelStyle}>Tournament Name</label>
+                <input required name="name" type="text" placeholder="e.g. Winter Open Championship 2026" style={inputStyle} />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                 <div>
-                  <label style={labelStyle}>Operations Date</label>
+                  <label style={labelStyle}>Tournament Date</label>
                   <input required name="date" type="date" style={inputStyle} />
                 </div>
                 <div>
@@ -86,23 +86,23 @@ export default function CreateTournamentModal() {
               </div>
 
               <div>
-                <label style={labelStyle}>Event Venue / Location</label>
-                <input required name="venue" type="text" placeholder="e.g. TTA Main Arena, Hall A" style={inputStyle} />
+                <label style={labelStyle}>Event Venue / Arena</label>
+                <input required name="venue" type="text" placeholder="e.g. TTA Main Hall, Table 1-8" style={inputStyle} />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                 <div>
-                  <label style={labelStyle}>Performance Level</label>
+                  <label style={labelStyle}>Tournament Tier</label>
                   <select required name="level" style={{ ...inputStyle, appearance: 'none' }}>
-                    <option value="BEGINNER">Foundational</option>
+                    <option value="BEGINNER">Foundational Tier</option>
                     <option value="INTERMEDIATE">Competitive Edge</option>
                     <option value="ADVANCED">Elite / Pro</option>
-                    <option value="OPEN">Open (All Levels)</option>
+                    <option value="OPEN">Open (All Tiers)</option>
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Eligibility Constraints</label>
-                  <input name="eligibility" type="text" placeholder="e.g. All registered members" style={inputStyle} />
+                  <label style={labelStyle}>Eligibility Requirements</label>
+                  <input name="eligibility" type="text" placeholder="e.g. Under 18 or All registered players" style={inputStyle} />
                 </div>
               </div>
 
@@ -118,8 +118,8 @@ export default function CreateTournamentModal() {
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem' }}>
-                <LoadingButton loadingText="Publishing Event..." style={{ flex: 1, padding: '1.1rem' }}>
-                   Confirm & Publish Event
+                <LoadingButton loadingText="Publishing Tournament..." style={{ flex: 1, padding: '1.1rem' }}>
+                   Publish Tournament
                 </LoadingButton>
                 <button 
                   type="button" 
@@ -127,7 +127,7 @@ export default function CreateTournamentModal() {
                   onClick={() => setIsOpen(false)} 
                   style={{ flex: 'none', padding: '0.8rem 2rem' }}
                 >
-                  Discard
+                  Cancel
                 </button>
               </div>
             </form>

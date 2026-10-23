@@ -6,9 +6,9 @@ import { logoutAction } from '@/actions/auth'
 
 const navLinks = [
   { href: '/student', label: 'Dashboard', icon: '📊', exact: true },
-  { href: '/student/fees', label: 'Payments', icon: '💳', exact: false },
+  { href: '/student/fees', label: 'Fees & Dues', icon: '💳', exact: false },
   { href: '/student/tournaments', label: 'Tournaments', icon: '🏆', exact: false },
-  { href: '/student/connect', label: 'Athlete Circle', icon: '🤝', exact: false },
+  { href: '/student/connect', label: 'Squad Chat', icon: '💬', exact: false },
 ]
 
 interface SidebarProps {
@@ -39,16 +39,16 @@ export default function StudentSidebar({ isOpen, onClose }: SidebarProps) {
 
         <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ fontSize: '0.55rem', fontWeight: 700, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>Athlete Portal</div>
+            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--ball-orange)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>Player Desk</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <div style={{
                 width: '32px', height: '32px', borderRadius: '8px',
-                background: 'linear-gradient(135deg, hsl(var(--accent-red)), #9f1239)',
+                background: 'linear-gradient(135deg, var(--ball-orange), #c2410c)',
                 display: 'grid', placeItems: 'center', fontSize: '0.9rem'
               }}>🏓</div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.8rem' }}>TTA Global</div>
-                <div style={{ fontSize: '0.6rem', color: 'hsl(var(--text-muted))' }}>Member</div>
+                <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>TTA Academy</div>
+                <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Player</div>
               </div>
             </div>
           </div>
