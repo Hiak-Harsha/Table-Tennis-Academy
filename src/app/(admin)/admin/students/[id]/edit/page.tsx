@@ -29,7 +29,7 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
           </div>
           <h1 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.15rem' }}>Edit Athlete</h1>
           <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.75rem' }}>
-             Strategic management of <span style={{ color: '#fff', fontWeight: 800 }}>{student.fullName}</span>'s academy record.
+             Strategic management of <span style={{ color: '#fff', fontWeight: 800 }}>{student.fullName}</span>&apos;s academy record.
           </p>
         </div>
         <div style={{ 

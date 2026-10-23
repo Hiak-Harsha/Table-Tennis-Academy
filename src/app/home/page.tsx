@@ -41,7 +41,7 @@ export default function Home() {
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ maxWidth: '750px' }}>
             <span style={{ color: 'var(--accent-red)', fontWeight: 700, letterSpacing: '4px', display: 'block', marginBottom: '1rem', textTransform: 'uppercase', fontSize: '0.8rem' }}>
-              State's Premier Training Base
+              State&apos;s Premier Training Base
             </span>
             <h1 style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', lineHeight: 0.95, textShadow: '0 8px 30px rgba(0,0,0,0.7)', marginBottom: '0.75rem' }}>
               Master<br />The Spin.
