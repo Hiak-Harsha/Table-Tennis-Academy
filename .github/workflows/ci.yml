@@ -34,7 +34,7 @@ jobs:
         run: npm run typecheck
 
       - name: Run Test Suite
-        run: npm run test
+        run: npx vitest run --reporter=verbose
         env:
           DATABASE_URL: 'postgresql://test:test@localhost:5432/test?schema=public'
           SESSION_SECRET: 'test-secret-at-least-32-characters-long-for-testing'
