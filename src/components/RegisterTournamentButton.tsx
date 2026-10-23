@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { registerForTournamentAction } from '@/actions/admin'
+import { useState } from 'react'
 import { useToast } from './ToastProvider'
 import PaymentGateway from './PaymentGateway'
 import { formatINR } from '@/lib/currency'
 
 export default function RegisterTournamentButton({ 
   tournamentId, 
-  studentId, 
+  studentId: _studentId, 
   entryFee, 
   isRegistered: initialRegistered 
 }: { 
@@ -19,25 +18,12 @@ export default function RegisterTournamentButton({
 }) {
   const [isRegistered, setIsRegistered] = useState(initialRegistered)
   const [showGateway, setShowGateway] = useState(false)
-  const [isPending, startTransition] = useTransition()
   const { showToast } = useToast()
 
   const handlePaymentSuccess = () => {
-    startTransition(async () => {
-      const formData = new FormData()
-      formData.append('tournamentId', tournamentId)
-      formData.append('studentId', studentId)
-      formData.append('amountPaid', entryFee.toString())
-      
-      const result = await registerForTournamentAction(null, formData)
-      if (result.success) {
-        setIsRegistered(true)
-        showToast('Tournament entry authorized and synchronized.', 'SUCCESS')
-        setShowGateway(false)
-      } else {
-        showToast(result.error || 'Identity verification failed after payment.', 'ERROR')
-      }
-    })
+    setIsRegistered(true)
+    showToast('Tournament entry confirmed and paid.', 'SUCCESS')
+    setShowGateway(false)
   }
 
   if (isRegistered) {
@@ -52,7 +38,6 @@ export default function RegisterTournamentButton({
     <>
       <button 
         onClick={() => setShowGateway(true)}
-        disabled={isPending}
         className="btn btn-primary"
         style={{ 
           width: '100%', background: 'hsl(var(--accent-blue))', 
@@ -60,13 +45,15 @@ export default function RegisterTournamentButton({
           fontSize: '1rem', padding: '1.25rem'
         }}
       >
-        {isPending ? 'Processing...' : `Register for ${formatINR(entryFee)}`}
+        Register for {formatINR(entryFee)}
       </button>
 
       {showGateway && (
         <PaymentGateway 
           amount={entryFee}
-          description="Tournament Operational Entry Fee"
+          purpose="TOURNAMENT"
+          targetId={tournamentId}
+          description="Tournament Entry Fee"
           onSuccess={handlePaymentSuccess}
           onCancel={() => setShowGateway(false)}
           redirectPath="/student/tournaments"

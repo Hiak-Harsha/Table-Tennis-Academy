@@ -15,6 +15,15 @@ const envSchema = z
       .min(32, 'SESSION_SECRET must be at least 32 characters')
       .default('development-insecure-secret-key-at-least-32-chars-long-do-not-use-in-prod'),
     PORT: z.string().optional().default('3000'),
+    RAZORPAY_KEY_ID: z.string().optional(),
+    RAZORPAY_KEY_SECRET: z.string().optional(),
+    RAZORPAY_WEBHOOK_SECRET: z
+      .string()
+      .min(16, 'RAZORPAY_WEBHOOK_SECRET must be at least 16 characters')
+      .default('dev_razorpay_webhook_secret_key_32_bytes_long'),
+    UPI_VPA: z.string().default('tta.academy@upi'),
+    UPI_MERCHANT_NAME: z.string().default('Table Tennis Academy'),
+    SMS_PROVIDER: z.enum(['console', 'msg91', 'twilio']).default('console'),
   })
   .refine(
     (data) => {

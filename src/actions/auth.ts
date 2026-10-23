@@ -14,6 +14,8 @@ import { hashPassword, verifyAndMigratePassword } from '@/lib/password'
 import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit'
 import { writeAuditLog } from '@/lib/audit'
 import { sanitizeText } from '@/lib/sanitize'
+import { normalizePhone, isValidPhone } from '@/lib/phone'
+import { requestOtpChallenge, verifyOtpChallenge, OtpPurpose } from '@/lib/otp'
 
 const UnifiedLoginSchema = z.object({
   identifier: z.string().min(1, 'Please enter your ID or mobile number.').trim(),
@@ -27,7 +29,11 @@ const RegisterSchema = z.object({
     .min(2, 'Full name required (minimum 2 characters).')
     .trim()
     .transform(sanitizeText),
-  phone: z.string().regex(/^\d{10}$/, 'Valid 10-digit mobile number required.'),
+  phone: z
+    .string()
+    .min(10, 'Valid 10-digit mobile number required.')
+    .refine((val) => isValidPhone(val), 'Valid Indian mobile number required (starting 6-9).')
+    .transform((val) => normalizePhone(val)),
   password: z.string().min(8, 'Password must be at least 8 characters long.'),
   age: z.preprocess((v) => Number(v), z.number().min(5, 'Minimum age is 5').max(70, 'Maximum age is 70')),
   batchType: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']),
@@ -381,3 +387,60 @@ export async function registerStudentAction(
 
   redirect('/student?welcome=true')
 }
+
+/**
+ * Server action to request a phone verification OTP.
+ */
+export async function requestOtpAction(
+  _prevState: unknown,
+  formData: FormData
+): Promise<{ success: boolean; message: string; cooldownSeconds?: number }> {
+  const ip = await getClientIp()
+  const rawPhone = (formData.get('phone') as string) || ''
+  const purpose = ((formData.get('purpose') as string) || 'REGISTER') as OtpPurpose
+
+  try {
+    const normalized = normalizePhone(rawPhone)
+    const rateLimit = await checkRateLimit(`otp:${ip}:${normalized}`, 5, 3600)
+    if (!rateLimit.allowed) {
+      return { success: false, message: 'Too many verification code requests. Please wait an hour.' }
+    }
+
+    const res = await requestOtpChallenge({
+      phone: normalized,
+      purpose,
+      ipAddress: ip,
+    })
+
+    return res
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Failed to request OTP.'
+    return { success: false, message: msg }
+  }
+}
+
+/**
+ * Server action to verify an OTP challenge.
+ */
+export async function verifyOtpAction(
+  _prevState: unknown,
+  formData: FormData
+): Promise<{ success: boolean; message: string; remainingAttempts?: number }> {
+  const rawPhone = (formData.get('phone') as string) || ''
+  const purpose = ((formData.get('purpose') as string) || 'REGISTER') as OtpPurpose
+  const code = (formData.get('code') as string) || ''
+
+  try {
+    const normalized = normalizePhone(rawPhone)
+    const res = await verifyOtpChallenge({
+      phone: normalized,
+      purpose,
+      code,
+    })
+    return res
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Verification failed.'
+    return { success: false, message: msg }
+  }
+}
+

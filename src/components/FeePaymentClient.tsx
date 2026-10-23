@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import PaymentGateway from './PaymentGateway'
-import { updateFeeStatusAction } from '@/actions/fees'
 import { useToast } from './ToastProvider'
 
 export function FeePaymentClient({ feeId, amount, currentStatus }: { feeId: string; amount: number; currentStatus: string }) {
@@ -10,14 +9,9 @@ export function FeePaymentClient({ feeId, amount, currentStatus }: { feeId: stri
   const [status, setStatus] = useState(currentStatus)
   const { showToast } = useToast()
 
-  const handleSuccess = async () => {
-    const result = await updateFeeStatusAction(feeId, 'PAID')
-    if (result.success) {
-      setStatus('PAID')
-      showToast('Payment quantum synchronized successfully.', 'SUCCESS')
-    } else {
-      showToast(result.error || 'Synchronization failed.', 'ERROR')
-    }
+  const handleSuccess = () => {
+    setStatus('PAID')
+    showToast('Payment verified and confirmed by bank.', 'SUCCESS')
   }
 
   if (status === 'PAID' || currentStatus === 'PAID') {
@@ -52,7 +46,9 @@ export function FeePaymentClient({ feeId, amount, currentStatus }: { feeId: stri
       {showGateway && (
         <PaymentGateway 
           amount={amount}
-          description="Academy Strategic Enrollment Fee"
+          purpose="FEE"
+          targetId={feeId}
+          description="Academy Enrollment Fee"
           onSuccess={handleSuccess}
           onCancel={() => setShowGateway(false)}
           redirectPath="/student"

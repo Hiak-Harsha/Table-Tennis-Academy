@@ -164,3 +164,45 @@ All breaking changes, schema modifications, security updates, and URL/env variab
   - `tests/unit/file-security.test.ts` (11 tests): Magic byte sniffing, extension matching, SVG rejection, size limits, path traversal defense.
   - `tests/unit/validations.test.ts` (9 tests): Phone number format, password length, schema edge cases.
 
+---
+
+## Phase 4: Payment Gateway Integrity, Webhook Verification & Mobile Authorisation (Completed)
+
+### 1. Cryptographic Webhook Handler & Idempotency (`src/app/api/webhooks/payments/route.ts`)
+- **Raw Body Signature Verification**: Implemented constant-time HMAC-SHA256 signature verification (`verifyWebhookSignature`, `crypto.timingSafeEqual`) on raw request body, completely preventing forged payment alerts.
+- **Webhook Idempotency**: Deduplicates incoming webhook events via the `PaymentEvent` table's unique `eventId` index to prevent double tournament enrollments or double fee credits upon network retries.
+- **Interactive Database Transactions**: Wrapped payment captures in atomic `prisma.$transaction` updating `Payment(CAPTURED)`, fulfilling invoices (`AcademyFee(PAID)`), creating tournament registrations, generating receipt numbers, and dispatching in-app notifications.
+
+### 2. Authoritative Payment State Machine (`src/lib/payment-state.ts`)
+- Enforced strict state transitions: `CREATED` → `AUTHORIZED` → `CAPTURED` | `FAILED`, `CAPTURED` → `REFUNDED`.
+- Guaranteed that client-side components can never directly mark invoices or tournaments as `PAID`. Status transitions happen exclusively via verified server webhooks, reconciliation jobs, or audited administrator cash records.
+
+### 3. Server-Driven Payment Orders & UPI Deep-Linking (`src/actions/payments.ts`)
+- Created `createPaymentOrderAction`: Pulls authoritative pricing directly from the database in integer paise (ignoring client parameters) and creates `Payment` records in the `CREATED` state.
+- Generated standard NPCI UPI Intent URLs (`upi://pay?pa=...&pn=...&am=...&cu=INR&tn=...`) for instant deep-linking into Google Pay, PhonePe, Paytm, and BHIM on mobile devices.
+- Added `checkPaymentStatusAction`: Polling endpoint for frontend clients to await server-side bank confirmation without client tampering.
+- Added `recordCashPaymentAction`: Admin-only audited action for recording physical academy cash collections.
+
+### 4. Modernized Payment Gateway UI (`src/components/PaymentGateway.tsx`)
+- Purged fake card number, CVV, expiry inputs, fake bank lists, "Simulate Verification" button, and fake "PCI-CERTIFIED" claims.
+- Integrated automated touch/pointer device detection (`pointer: coarse`). On mobile, presents an instant "Pay via UPI App" button; on desktop, renders dynamic scannable QR code.
+- Added live status polling showing "Verifying with Bank..." and smoothly transitioning to confirmed receipt once the webhook confirms settlement.
+
+### 5. Mobile Phone Normalization & 6-Digit OTP Engine (`src/lib/phone.ts`, `src/lib/otp.ts`, `src/lib/sms/provider.ts`)
+- **E.164 Normalization**: Standardizes Indian mobile inputs (`9876543210`, `+91 98765 43210`, `09876543210`) into `+91XXXXXXXXXX`.
+- **Hashed OTP Storage**: 6-digit numeric codes generated with `crypto.randomInt` and stored hashed with per-challenge salt, 5-minute TTL, max 5 attempts, and 30-second resend cooldowns.
+- **SMS Providers**: Pluggable provider interface supporting `ConsoleProvider` (dev/test only, strictly forbidden in production) with DLT-compliant `Msg91Provider` and `TwilioVerifyProvider`.
+- **Upgraded Registration Wizard (`src/app/register/page.tsx`)**: Replaced hardcoded fake OTPs with real 6-digit verification, `inputMode="numeric"`, `autoComplete="one-time-code"`, and Android WebOTP API support.
+
+### 6. Progressive Web App (PWA) & Web Push Foundation
+- Added `public/manifest.webmanifest` and `public/sw.js` with offline caching and Web Push notification event listeners.
+- Added `src/components/PwaRegister.tsx` capturing `beforeinstallprompt` for smooth mobile home-screen installation.
+
+### 7. Test Suite Expansion
+- Added 4 new test suites (21 new tests; total 13 suites, 92/92 tests passing):
+  - `tests/unit/payment-security.test.ts` (7 tests): HMAC signature verification, tampered payload rejection, forged secret defense, NPCI UPI intent generation.
+  - `tests/unit/payment-state.test.ts` (3 tests): Transition validation and illegal state assertions.
+  - `tests/unit/phone.test.ts` (6 tests): E.164 normalization, invalid number rejection, display formatting.
+  - `tests/unit/otp.test.ts` (5 tests): 6-digit generation, hashing with salt, timing-safe verification, wrong code/salt rejection.
+
+

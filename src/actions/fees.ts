@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { requireAdmin, requireAny } from '@/lib/auth-guard'
 import { rupeesToPaise, formatINR } from '@/lib/currency'
 import { FeeSchema } from '@/lib/validations'
+import { writeAuditLog } from '@/lib/audit'
 import { z } from 'zod'
 
 export async function addFeeAction(prevState: any, formData: FormData) {
@@ -41,17 +42,7 @@ export async function addFeeAction(prevState: any, formData: FormData) {
 
 export async function updateFeeStatusAction(feeId: string, status: string) {
   try {
-    const user = await requireAny()
-
-    // Safety check: a student can only mark their OWN fee as PAID (via gateway flow)
-    if (user.role === 'STUDENT') {
-      const studentInternalId = user.student?.id || user.internalStudentId
-      const targetFee = await prisma.academyFee.findUnique({ where: { id: feeId } })
-      if (!targetFee || targetFee.studentId !== studentInternalId) {
-        return { error: 'Unauthorized: Cannot modify external fee record.' }
-      }
-      if (status !== 'PAID') return { error: 'Invalid status transition for student.' }
-    }
+    const admin = await requireAdmin()
 
     await prisma.academyFee.update({
       where: { id: feeId },
@@ -60,6 +51,16 @@ export async function updateFeeStatusAction(feeId: string, status: string) {
         paymentDate: status === 'PAID' ? new Date() : null,
       },
     })
+
+    await writeAuditLog({
+      actorId: admin.id,
+      actorRole: admin.role,
+      action: 'FEE_STATUS_MANUALLY_UPDATED',
+      entity: 'AcademyFee',
+      entityId: feeId,
+      details: { newStatus: status },
+    })
+
     revalidatePath('/admin/fees')
     revalidatePath('/student/fees')
     return { success: true }

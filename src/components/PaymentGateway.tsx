@@ -1,34 +1,123 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatINR } from '@/lib/currency'
+import { createPaymentOrderAction, checkPaymentStatusAction } from '@/actions/payments'
+import { generateWebhookSignature } from '@/lib/payment-security'
 
 interface PaymentProps {
   amount: number
   description: string
+  purpose?: 'FEE' | 'TOURNAMENT'
+  targetId?: string
   onSuccess: () => void
   onCancel: () => void
   redirectPath?: string
 }
 
-export default function PaymentGateway({ amount, description, onSuccess, onCancel, redirectPath }: PaymentProps) {
+export default function PaymentGateway({
+  amount,
+  description,
+  purpose = 'FEE',
+  targetId,
+  onSuccess,
+  onCancel,
+  redirectPath,
+}: PaymentProps) {
   const router = useRouter()
-  const [step, setStep] = useState<'CHOICE' | 'UPI' | 'QR' | 'CARD' | 'BANK' | 'PROCESSING' | 'SUCCESS'>('CHOICE')
-  const [timeLeft, setTimeLeft] = useState(300)
-  const [upiId, setUpiId] = useState('')
-  const [cardNumber, setCardNumber] = useState('')
-  const [cardExpiry, setCardExpiry] = useState('')
-  const [cardCvv, setCardCvv] = useState('')
+  const [isMobile, setIsMobile] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [orderId, setOrderId] = useState<string | null>(null)
+  const [upiIntent, setUpiIntent] = useState<string>('')
+  const [status, setStatus] = useState<'AWAITING' | 'CONFIRMING' | 'SUCCESS' | 'ERROR'>('AWAITING')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [timeLeft, setTimeLeft] = useState(300) // 5 minutes TTL
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Detect mobile device (touch primary pointer or user-agent)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const coarsePointer = window.matchMedia('(pointer: coarse)').matches
+      const mobileAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      setIsMobile(coarsePointer || mobileAgent)
+    }
+  }, [])
+
+  // Initialize authoritative order on server
+  useEffect(() => {
+    let mounted = true
+
+    async function initOrder() {
+      if (!targetId) {
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+      const res = await createPaymentOrderAction({
+        purpose,
+        targetId,
+      })
+
+      if (!mounted) return
+
+      if (res.success && res.orderId && res.upiIntent) {
+        setOrderId(res.orderId)
+        setUpiIntent(res.upiIntent)
+        setLoading(false)
+      } else {
+        setErrorMessage(res.error || 'Failed to initialize payment gateway order.')
+        setStatus('ERROR')
+        setLoading(false)
+      }
+    }
+
+    initOrder()
+
+    return () => {
+      mounted = false
+    }
+  }, [purpose, targetId])
+
+  // Countdown timer for order session
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Authoritative server status polling: client NEVER sets status directly
+  const checkStatus = useCallback(async () => {
+    if (!orderId) return
+
+    try {
+      const res = await checkPaymentStatusAction(orderId)
+      if (res.success && res.status === 'CAPTURED') {
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+        setStatus('SUCCESS')
+        setTimeout(() => {
+          onSuccess()
+          if (redirectPath) {
+            router.push(redirectPath)
+            router.refresh()
+          }
+        }, 1500)
+      }
+    } catch {
+      // Polling network glitch; continue next cycle
+    }
+  }, [orderId, onSuccess, redirectPath, router])
 
   useEffect(() => {
-    if (step === 'QR' || step === 'UPI' || step === 'CARD') {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
-      }, 1000)
-      return () => clearInterval(timer)
+    if (orderId && status === 'AWAITING') {
+      pollIntervalRef.current = setInterval(checkStatus, 2000)
+      return () => {
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+      }
     }
-  }, [step])
+  }, [orderId, status, checkStatus])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -36,157 +125,343 @@ export default function PaymentGateway({ amount, description, onSuccess, onCance
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`
   }
 
-  const handleProcess = () => {
-    setStep('PROCESSING')
-    setTimeout(() => {
-      setStep('SUCCESS')
-      setTimeout(() => {
-        onSuccess()
-        if (redirectPath) {
-          router.push(redirectPath)
-          router.refresh()
-        }
-      }, 1500)
-    }, 2500)
+  // Developer simulation helper: triggers genuine webhook payload with valid HMAC signature
+  const triggerDevWebhook = async () => {
+    if (!orderId) return
+    setStatus('CONFIRMING')
+
+    try {
+      const payload = {
+        event: 'payment.captured',
+        id: `evt_test_${Date.now()}`,
+        payload: {
+          payment: {
+            entity: {
+              id: `pay_${Date.now()}`,
+              order_id: orderId,
+              amount,
+              currency: 'INR',
+              status: 'captured',
+              method: 'UPI',
+            },
+          },
+        },
+      }
+
+      const rawBody = JSON.stringify(payload)
+      // Dev webhook secret
+      const secret = 'dev_razorpay_webhook_secret_key_32_bytes_long'
+      const signature = generateWebhookSignature(rawBody, secret)
+
+      const res = await fetch('/api/webhooks/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-razorpay-signature': signature,
+        },
+        body: rawBody,
+      })
+
+      if (res.ok) {
+        // Status polling will immediately catch the CAPTURED status transition in DB
+        await checkStatus()
+      } else {
+        const data = await res.json()
+        setErrorMessage(data.error || 'Webhook trigger failed')
+        setStatus('ERROR')
+      }
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Simulation failed')
+      setStatus('ERROR')
+    }
   }
 
+  const qrImageUrl = upiIntent
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(upiIntent)}`
+    : '/images/qr_placeholder.png'
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 10000,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(20px)',
-      padding: '1.5rem', animation: 'fadeIn 0.4s ease'
-    }}>
-      <div className="glass" style={{
-        width: '100%', maxWidth: '440px',
-        borderRadius: '24px', overflow: 'hidden',
-        border: '1px solid var(--border-medium)',
-        boxShadow: '0 40px 100px rgba(0,0,0,0.8)',
-        animation: 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        color: '#fff'
-      }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.92)',
+        backdropFilter: 'blur(20px)',
+        padding: '1.5rem',
+      }}
+    >
+      <div
+        className="glass"
+        style={{
+          width: '100%',
+          maxWidth: '440px',
+          borderRadius: '24px',
+          overflow: 'hidden',
+          border: '1px solid var(--border-medium)',
+          boxShadow: '0 40px 100px rgba(0,0,0,0.8)',
+          color: '#fff',
+        }}
+      >
         {/* Header */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '2rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            padding: '1.75rem',
+            borderBottom: '1px solid var(--border-subtle)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff', margin: 0 }}>Nexus Payment Portal</h3>
-            <p style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', margin: '0.2rem 0 0 0' }}>Secure Academy Protocol</p>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff', margin: 0 }}>
+              TTA Payment Gateway
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', margin: '0.2rem 0 0 0' }}>
+              {description}
+            </p>
           </div>
-          <div style={{ 
-            padding: '0.6rem 1rem', background: 'hsl(var(--accent-blue-glow))', 
-            border: '1px solid hsl(var(--accent-blue))', borderRadius: '12px', 
-            color: 'hsl(var(--accent-blue))', fontWeight: 900, fontSize: '1.2rem' 
-          }}>
+          <div
+            style={{
+              padding: '0.6rem 1rem',
+              background: 'hsl(var(--accent-blue-glow))',
+              border: '1px solid hsl(var(--accent-blue))',
+              borderRadius: '12px',
+              color: 'hsl(var(--accent-blue))',
+              fontWeight: 900,
+              fontSize: '1.2rem',
+            }}
+          >
             {formatINR(amount)}
           </div>
         </div>
 
         {/* Content */}
-        <div style={{ padding: '2.5rem' }}>
-          {step === 'CHOICE' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-               <p style={{ fontSize: '0.95rem', color: 'hsl(var(--text-secondary))', marginBottom: '0.5rem' }}>Select your authenticated method:</p>
-               <button onClick={() => setStep('QR')} className="card" style={{ padding: '1.25rem', border: '1px solid var(--border-subtle)', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1.25rem', transition: 'all 0.3s' }}>
-                 <span style={{ fontSize: '1.8rem' }}>📲</span>
-                 <div style={{ textAlign: 'left' }}>
-                   <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.1rem' }}>Unified UPI QR</div>
-                   <div style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>GPay, PhonePe, Sync</div>
-                 </div>
-               </button>
-               <button onClick={() => setStep('CARD')} className="card" style={{ padding: '1.25rem', border: '1px solid var(--border-subtle)', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1.25rem', transition: 'all 0.3s' }}>
-                 <span style={{ fontSize: '1.8rem' }}>💳</span>
-                 <div style={{ textAlign: 'left' }}>
-                   <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.1rem' }}>Credit/Debit Link</div>
-                   <div style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>Visa, MC, Rupay</div>
-                 </div>
-               </button>
-               <button onClick={() => setStep('BANK')} className="card" style={{ padding: '1.25rem', border: '1px solid var(--border-subtle)', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1.25rem', transition: 'all 0.3s' }}>
-                 <span style={{ fontSize: '1.8rem' }}>🏛️</span>
-                 <div style={{ textAlign: 'left' }}>
-                   <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.1rem' }}>Net Banking Sync</div>
-                   <div style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>Direct Academy Gateway</div>
-                 </div>
-               </button>
-               <button onClick={onCancel} style={{ marginTop: '0.5rem', background: 'transparent', border: 'none', color: 'hsl(var(--accent-red))', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', width: 'fit-content', margin: '0 auto' }}>Cancel Operation</button>
+        <div style={{ padding: '2rem' }}>
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '2.5rem 0' }}>
+              <div
+                style={{
+                  width: '50px',
+                  height: '50px',
+                  border: '4px solid rgba(255,255,255,0.1)',
+                  borderTopColor: 'hsl(var(--accent-blue))',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                  margin: '0 auto 1.5rem auto',
+                }}
+              />
+              <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.9rem' }}>
+                Creating secure order session...
+              </p>
             </div>
           )}
 
-          {step === 'QR' && (
-            <div style={{ textAlign: 'center' }}>
-               <div style={{ padding: '2rem', background: '#fff', borderRadius: '24px', display: 'inline-block', marginBottom: '2rem', boxShadow: '0 0 40px rgba(255,255,255,0.1)' }}>
-                 <img src="/images/qr_placeholder.png" alt="Payment QR" style={{ width: '100%', maxWidth: '200px', height: 'auto', display: 'block' }} />
-               </div>
-               <div style={{ fontSize: '1rem', color: '#fff', fontWeight: 800, marginBottom: '0.5rem' }}>Synchronizing with Mobile Apps</div>
-               <div style={{ fontSize: '0.85rem', color: 'hsl(var(--accent-red))', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Session Expires: {formatTime(timeLeft)}</div>
-               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '2.5rem' }}>
-                 <button onClick={() => setStep('CHOICE')} className="btn btn-secondary">Previous</button>
-                 <button onClick={handleProcess} className="btn btn-primary" style={{ background: '#10b981', boxShadow: '0 0 20px rgba(16,185,129,0.3)' }}>Simulate Verification</button>
-               </div>
+          {!loading && status === 'ERROR' && (
+            <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
+              <h4 style={{ color: '#ef4444', marginBottom: '0.5rem' }}>Initialization Error</h4>
+              <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-secondary))', marginBottom: '1.5rem' }}>
+                {errorMessage}
+              </p>
+              <button onClick={onCancel} className="btn btn-secondary" style={{ width: '100%' }}>
+                Close
+              </button>
             </div>
           )}
 
-          {step === 'CARD' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-               <div>
-                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.7rem', fontWeight: 900, color: 'hsl(var(--text-muted))', textTransform: 'uppercase' }}>Card Number</label>
-                 <input type="text" placeholder="0000 0000 0000 0000" value={cardNumber} onChange={e => setCardNumber(e.target.value)} style={{ width: '100%', padding: '1rem', borderRadius: '12px', background: 'hsl(var(--bg-primary))', border: '1px solid var(--border-subtle)', color: '#fff', outline: 'none' }} />
-               </div>
-               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                 <div>
-                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.7rem', fontWeight: 900, color: 'hsl(var(--text-muted))', textTransform: 'uppercase' }}>Expiry</label>
-                   <input type="text" placeholder="MM/YY" value={cardExpiry} onChange={e => setCardExpiry(e.target.value)} style={{ width: '100%', padding: '1rem', borderRadius: '12px', background: 'hsl(var(--bg-primary))', border: '1px solid var(--border-subtle)', color: '#fff', outline: 'none' }} />
-                 </div>
-                 <div>
-                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.7rem', fontWeight: 900, color: 'hsl(var(--text-muted))', textTransform: 'uppercase' }}>CVV</label>
-                   <input type="password" placeholder="***" value={cardCvv} onChange={e => setCardCvv(e.target.value)} style={{ width: '100%', padding: '1rem', borderRadius: '12px', background: 'hsl(var(--bg-primary))', border: '1px solid var(--border-subtle)', color: '#fff', outline: 'none' }} />
-                 </div>
-               </div>
-               <button onClick={handleProcess} className="btn btn-primary" style={{ width: '100%', padding: '1.25rem', marginTop: '1rem' }}>Initiate Authorization</button>
-               <button onClick={() => setStep('CHOICE')} style={{ background: 'transparent', border: 'none', color: 'hsl(var(--text-muted))', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem' }}>Switch Method</button>
+          {!loading && status === 'CONFIRMING' && (
+            <div style={{ textAlign: 'center', padding: '2.5rem 0' }}>
+              <div
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  border: '4px solid rgba(16, 185, 129, 0.1)',
+                  borderTopColor: '#10b981',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                  margin: '0 auto 1.5rem auto',
+                }}
+              />
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', marginBottom: '0.5rem' }}>
+                Verifying with Bank
+              </h3>
+              <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem' }}>
+                Awaiting authoritative gateway webhook confirmation...
+              </p>
             </div>
           )}
 
-          {step === 'BANK' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-               <p style={{ fontSize: '0.9rem', color: 'hsl(var(--text-secondary))' }}>Select your preferred financial institution:</p>
-               {['HDFC Bank Protocol', 'ICICI Direct Sync', 'SBI Nexus', 'Axis Financial'].map(bank => (
-                 <button key={bank} onClick={handleProcess} className="card" style={{ padding: '1rem', textAlign: 'left', cursor: 'pointer', border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.02)' }}>
-                    <div style={{ fontWeight: 800 }}>{bank}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))' }}>Direct API Integration</div>
-                 </button>
-               ))}
-               <button onClick={() => setStep('CHOICE')} style={{ background: 'transparent', border: 'none', color: 'hsl(var(--text-muted))', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', marginTop: '1rem' }}>Switch Method</button>
+          {!loading && status === 'SUCCESS' && (
+            <div style={{ textAlign: 'center', padding: '2.5rem 0' }}>
+              <div
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  background: 'rgba(16,185,129,0.1)',
+                  color: '#10b981',
+                  border: '2px solid rgba(16,185,129,0.3)',
+                  borderRadius: '50%',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '2.5rem',
+                  margin: '0 auto 1.5rem auto',
+                }}
+              >
+                ✓
+              </div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#10b981', marginBottom: '0.5rem' }}>
+                Payment Confirmed
+              </h2>
+              <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.85rem' }}>
+                Authoritative transaction verified by bank
+              </p>
             </div>
           )}
 
-          {step === 'PROCESSING' && (
-            <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-               <div style={{ 
-                 width: '70px', height: '70px', border: '4px solid rgba(255,255,255,0.05)', 
-                 borderTopColor: 'hsl(var(--accent-blue))', borderRadius: '50%', 
-                 animation: 'spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite', margin: '0 auto 2rem auto' 
-               }}></div>
-               <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fff', marginBottom: '0.5rem' }}>Processing</h3>
-               <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '1rem' }}>Verifying quantum on secure nodes...</p>
-            </div>
-          )}
+          {!loading && status === 'AWAITING' && (
+            <div>
+              {/* Mobile UPI Intent Button */}
+              {isMobile && upiIntent && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <a
+                    href={upiIntent}
+                    className="btn btn-primary"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.75rem',
+                      width: '100%',
+                      padding: '1.25rem',
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3)',
+                      fontSize: '1.05rem',
+                      fontWeight: 800,
+                      textDecoration: 'none',
+                      borderRadius: '16px',
+                    }}
+                  >
+                    <span>⚡</span> Pay via UPI App (GPay / PhonePe / Paytm)
+                  </a>
+                  <p
+                    style={{
+                      textAlign: 'center',
+                      fontSize: '0.75rem',
+                      color: 'hsl(var(--text-muted))',
+                      marginTop: '0.75rem',
+                    }}
+                  >
+                    Opens installed UPI application directly on your device
+                  </p>
+                </div>
+              )}
 
-          {step === 'SUCCESS' && (
-            <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-               <div style={{ 
-                 width: '100px', height: '100px', background: 'rgba(16,185,129,0.1)', 
-                 color: '#10b981', border: '2px solid rgba(16,185,129,0.3)', borderRadius: '50%', 
-                 display: 'grid', placeItems: 'center', fontSize: '3rem', 
-                 margin: '0 auto 2rem auto', animation: 'scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)' 
-               }}>✓</div>
-               <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981', marginBottom: '0.5rem' }}>Authorized</h2>
-               <p style={{ color: 'hsl(var(--text-muted))', fontSize: '1rem' }}>Standard 1.5s Redirection Active</p>
+              {/* Dynamic QR Code for Desktop or Mobile Secondary */}
+              <div style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    padding: '1.25rem',
+                    background: '#fff',
+                    borderRadius: '20px',
+                    display: 'inline-block',
+                    marginBottom: '1rem',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  <img
+                    src={qrImageUrl}
+                    alt="Authoritative UPI QR Code"
+                    style={{ width: '180px', height: '180px', display: 'block' }}
+                  />
+                </div>
+
+                <div style={{ fontSize: '0.95rem', color: '#fff', fontWeight: 700, marginBottom: '0.25rem' }}>
+                  Scan to Pay with Any UPI App
+                </div>
+                <div
+                  style={{
+                    fontSize: '0.8rem',
+                    color: 'hsl(var(--accent-red))',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Session Expires: {formatTime(timeLeft)}
+                </div>
+
+                {orderId && (
+                  <div
+                    style={{
+                      fontSize: '0.7rem',
+                      color: 'hsl(var(--text-muted))',
+                      fontFamily: 'monospace',
+                      marginTop: '0.5rem',
+                    }}
+                  >
+                    Order Ref: {orderId}
+                  </div>
+                )}
+              </div>
+
+              {/* Developer Test Webhook Simulation */}
+              <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={triggerDevWebhook}
+                  className="btn btn-secondary"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    fontSize: '0.8rem',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px dashed var(--border-medium)',
+                    color: '#10b981',
+                  }}
+                >
+                  ⚡ [Dev Simulation] Dispatch Verified Webhook
+                </button>
+              </div>
+
+              {/* Cancel Button */}
+              <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'hsl(var(--text-muted))',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  Cancel Operation
+                </button>
+              </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.25rem', textAlign: 'center', fontSize: '0.75rem', color: 'hsl(var(--text-muted))', fontWeight: 800, letterSpacing: '0.05em' }}>
-          🛡️ ENCRYPTED SYNC • PCI-CERTIFIED • TTA SECURE
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.02)',
+            padding: '1rem',
+            textAlign: 'center',
+            fontSize: '0.7rem',
+            color: 'hsl(var(--text-muted))',
+            fontWeight: 700,
+            letterSpacing: '0.05em',
+          }}
+        >
+          🔒 SERVER-VERIFIED WEBHOOK CONFIRMATION • NPCI UPI INTEGRATION
         </div>
       </div>
     </div>

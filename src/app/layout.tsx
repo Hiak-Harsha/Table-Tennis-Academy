@@ -7,9 +7,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Table Tennis Academy",
   description: "Official Table Tennis Academy Portal. Professional coaching and sports management.",
+  manifest: "/manifest.webmanifest",
 };
 
 import { ToastProvider } from "@/components/ToastProvider";
+import PwaRegister from "@/components/PwaRegister";
 
 export default function RootLayout({
   children,
@@ -21,6 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ToastProvider>
           {children}
+          <PwaRegister />
         </ToastProvider>
       </body>
     </html>

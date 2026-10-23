@@ -35,9 +35,64 @@ model Student {
   fees             AcademyFee[]
   tournaments      TournamentPayment[]
   chatMessages     ChatMessage[]       @relation("SentMessages")
+  payments         Payment[]
 
   @@index([batchType])
   @@index([enrollmentStatus])
+}
+
+model Payment {
+  id            String    @id @default(uuid())
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  studentId     String
+  purpose       String    // FEE, TOURNAMENT
+  targetId      String    // ID of AcademyFee or Tournament
+  amount        Int       // Stored in Paise (1 INR = 100 Paise)
+  currency      String    @default("INR")
+  provider      String    @default("RAZORPAY")
+  orderId       String    @unique
+  paymentId     String?   @unique
+  signature     String?
+  status        String    @default("CREATED") // CREATED, AUTHORIZED, CAPTURED, FAILED, REFUNDED
+  method        String?   // UPI, CARD, NETBANKING, CASH
+  failureReason String?
+  createdAt     DateTime  @default(now())
+  capturedAt    DateTime?
+
+  @@index([studentId])
+  @@index([status])
+  @@index([orderId])
+  @@index([purpose, targetId])
+}
+
+model PaymentEvent {
+  id          String    @id @default(uuid())
+  eventId     String    @unique // Gateway event ID for webhook idempotency
+  eventType   String    // payment.captured, payment.failed, etc.
+  payload     String    // Raw JSON string
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+  status      String    @default("PROCESSED") // PROCESSED, FAILED, IGNORED
+
+  @@index([eventId])
+  @@index([eventType])
+}
+
+model OtpChallenge {
+  id          String    @id @default(uuid())
+  phone       String    // E.164 normalized format (+91XXXXXXXXXX)
+  codeHash    String    // SHA-256 with challenge salt
+  salt        String
+  purpose     String    // REGISTER, LOGIN, PASSWORD_RESET, STEP_UP
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+
+  @@index([phone, purpose])
+  @@index([expiresAt])
 }
 
 model AcademyFee {
