@@ -14,138 +14,150 @@ function LoginContent() {
   const { showToast } = useToast()
 
   const [state, action] = useActionState(unifiedLoginAction, null)
-  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     if (state?.error) showToast(state.error, 'ERROR')
   }, [state?.error, showToast])
 
   const inputStyle = {
-    width: '100%', padding: '0.65rem 1rem', background: 'rgba(255,255,255,0.03)',
-    border: '1px solid var(--border-subtle)', color: '#fff', borderRadius: '8px',
-    outline: 'none', fontSize: '1rem', minHeight: '44px'
+    width: '100%',
+    padding: '0.65rem 1rem',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid var(--border-subtle)',
+    color: '#fff',
+    borderRadius: '8px',
+    outline: 'none',
+    fontSize: '0.9rem',
+    boxSizing: 'border-box' as const,
   }
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '100dvh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
       background: 'radial-gradient(ellipse at top right, hsla(343, 100%, 50%, 0.06), transparent 50%), radial-gradient(ellipse at bottom left, hsla(217, 91%, 60%, 0.06), transparent 50%), hsl(var(--bg-primary))',
-      padding: '1rem', flexDirection: 'column', gap: '1.5rem'
+      padding: '1rem',
+      flexDirection: 'column',
+      gap: '1.5rem',
+      boxSizing: 'border-box',
+      width: '100%',
     }}>
 
       <div style={{
-        display: 'flex', width: '100%', maxWidth: '800px', gap: '1.5rem',
-        alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap'
+        display: 'flex',
+        width: '100%',
+        maxWidth: '800px',
+        gap: '1.5rem',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        boxSizing: 'border-box',
       }}>
 
         {/* Login Card */}
         <div className="card glass animate-fade-in auth-portal-card" style={{ borderRadius: '16px', zIndex: 1 }}>
           <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
             <div style={{
-              width: '44px', height: '44px', borderRadius: '12px',
-              background: isAdminMode ? 'var(--table-blue)' : 'var(--ball-orange)',
-              display: 'grid', placeItems: 'center', color: '#fff', fontSize: '1.25rem',
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: isAdminMode ? 'hsl(var(--accent-blue))' : 'hsl(var(--accent-red))',
+              display: 'grid',
+              placeItems: 'center',
+              color: '#fff',
+              fontSize: '1rem',
               margin: '0 auto 1rem auto',
-              boxShadow: isAdminMode ? '0 6px 16px var(--table-blue-glow)' : '0 6px 16px var(--ball-orange-glow)'
+              transform: 'rotate(-3deg)',
+              boxShadow: isAdminMode ? '0 6px 16px hsla(217, 91%, 60%, 0.3)' : '0 6px 16px hsla(343, 100%, 50%, 0.3)'
             }}>🏓</div>
-            <h2 style={{ fontSize: '1.6rem', marginBottom: '0.25rem', fontWeight: 800 }}>Academy Sign In</h2>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>Access your player training hub, schedule, and tournaments.</p>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '0.25rem' }}>Nexus Entry</h2>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>Secure synchronization with Academy protocols.</p>
           </div>
 
           {isRegistered && (
             <div style={{
-              background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#10b981', padding: '0.65rem', borderRadius: '8px', marginBottom: '1rem',
-              fontSize: '0.8rem', textAlign: 'center', fontWeight: 700
+              background: 'hsla(160, 100%, 50%, 0.05)',
+              border: '1px solid hsla(160, 100%, 50%, 0.2)',
+              color: '#10b981',
+              padding: '0.5rem',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              fontSize: '0.75rem',
+              textAlign: 'center',
+              fontWeight: 600
             }}>
-              ✓ Account created successfully! Please sign in.
+              ✓ Mobile Identity Synced. Access Granted.
             </div>
           )}
 
           {/* Role Tabs */}
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '4px', marginBottom: '1.25rem', border: '1px solid var(--paddle-border)' }}>
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '3px', marginBottom: '1.25rem', border: '1px solid var(--border-subtle)' }}>
             <button type="button" onClick={() => setIsAdminMode(false)}
               style={{
-                flex: 1, padding: '0.5rem', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                background: !isAdminMode ? 'var(--ball-orange)' : 'transparent',
-                color: !isAdminMode ? '#0B0E14' : '#94a3b8', fontWeight: 800, fontSize: '0.85rem', transition: '0.15s'
-              }}>PLAYER</button>
+                flex: 1, padding: '0.45rem', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                background: !isAdminMode ? 'rgba(255,255,255,0.06)' : 'transparent',
+                color: !isAdminMode ? '#fff' : 'hsl(var(--text-muted))', fontWeight: 700, fontSize: '0.8rem', transition: '0.15s'
+              }}>ATHLETE</button>
             <button type="button" onClick={() => setIsAdminMode(true)}
               style={{
-                flex: 1, padding: '0.5rem', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                background: isAdminMode ? 'var(--table-blue)' : 'transparent',
-                color: isAdminMode ? '#fff' : '#94a3b8', fontWeight: 800, fontSize: '0.85rem', transition: '0.15s'
-              }}>COACH DESK</button>
+                flex: 1, padding: '0.45rem', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                background: isAdminMode ? 'rgba(59,130,246,0.15)' : 'transparent',
+                color: isAdminMode ? 'hsl(var(--accent-blue))' : 'hsl(var(--text-muted))', fontWeight: 700, fontSize: '0.8rem', transition: '0.15s'
+              }}>OVERSEER</button>
           </div>
 
           <form action={action} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <input type="hidden" name="role" value={isAdminMode ? 'ADMIN' : 'STUDENT'} />
 
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.35rem' }}>
-                {isAdminMode ? 'Coach / Admin Mobile' : 'Mobile Number or Player ID'}
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '0.35rem' }}>
+                {isAdminMode ? 'System Identifier' : 'ID / Mobile'}
               </label>
-              <input name="identifier" type="text" placeholder={isAdminMode ? "e.g. 9999999999" : "e.g. 9876543210 or TTA-01001"} required style={inputStyle} />
+              <input name="identifier" type="text" placeholder={isAdminMode ? "Admin UID" : "e.g. 1234567890"} required style={inputStyle} />
             </div>
 
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Password</label>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer', padding: '0.2rem 0.4rem', fontWeight: 600 }}
-                >
-                  {showPassword ? '👁 Hide' : '👁 Show'}
-                </button>
-              </div>
-              <input name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" required style={inputStyle} />
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '0.3rem' }}>Security Key</label>
+              <input name="password" type="password" placeholder="••••••••" required style={inputStyle} />
             </div>
 
             <LoadingButton
               variant={isAdminMode ? 'secondary' : 'primary'}
-              loadingText="Signing In..."
-              style={{
-                padding: '0.75rem',
-                marginTop: '0.5rem',
-                background: isAdminMode ? 'var(--table-blue)' : 'var(--ball-orange)',
-                color: isAdminMode ? '#fff' : '#0B0E14',
-                fontWeight: 800,
-                fontSize: '1rem',
-                width: '100%'
-              }}
+              loadingText="VERIFYING..."
+              style={{ padding: '0.65rem', marginTop: '0.25rem', background: isAdminMode ? 'hsl(var(--accent-blue))' : undefined, width: '100%' }}
             >
-              Sign In
+              {isAdminMode ? 'AUTHORIZE' : 'SYNC WITH HUB'}
             </LoadingButton>
 
           </form>
 
-          <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem' }}>
-            <span style={{ color: '#94a3b8' }}>New athlete joining the academy?</span>{' '}
-            <Link href="/register" style={{ color: 'var(--ball-orange)', textDecoration: 'none', fontWeight: 800 }}>Register Here</Link>
+          <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.8rem' }}>
+            <span style={{ color: 'hsl(var(--text-muted))' }}>Not in the circuit?</span>{' '}
+            <Link href="/register" style={{ color: 'hsl(var(--accent-blue))', textDecoration: 'none', fontWeight: 700 }}>APPLY HERE</Link>
           </div>
         </div>
 
         {/* Side Feature Cards */}
-        <div style={{ flex: '1 1 240px', display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: '220px', maxWidth: '280px' }} className="animate-fade-in">
+        <div style={{ flex: '1 1 240px', display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: '220px', maxWidth: '300px' }} className="animate-fade-in">
           {[
-            { icon: '💬', title: 'Squad Chat', desc: 'Direct updates from head coaches & batch.' },
-            { icon: '🏆', title: 'Tournament Circuit', desc: 'State opens and academy ranking events.' },
-            { icon: '🛡️', title: 'Pass & Subscriptions', desc: 'Verified digital gate access and fee history.' }
+            { icon: '🌐', title: 'Athlete Circle', desc: 'Secure circuit communication.' },
+            { icon: '🏆', title: 'Tournament Hub', desc: 'Real-time event discovery.' },
+            { icon: '🛡️', title: 'Secure Ledger', desc: 'Immutable financial transparency.' }
           ].map((f, i) => (
-            <div key={i} className="glass" style={{ padding: '0.85rem 1.15rem', borderRadius: '12px', display: 'flex', gap: '0.85rem', alignItems: 'center', border: '1px solid var(--paddle-border)' }}>
-              <div style={{ fontSize: '1.3rem' }}>{f.icon}</div>
+            <div key={i} className="glass" style={{ padding: '0.85rem 1rem', borderRadius: '10px', display: 'flex', gap: '0.75rem', alignItems: 'center', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: '1.1rem' }}>{f.icon}</div>
               <div>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800 }}>{f.title}</h4>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>{f.desc}</p>
+                <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700 }}>{f.title}</h4>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{f.desc}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <Link href="/" style={{ color: 'hsl(var(--text-muted))', textDecoration: 'none', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.5 }}>
+      <Link href="/" style={{ color: 'hsl(var(--text-muted))', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.6 }}>
         ← Return to Main Terminal
       </Link>
     </div>
@@ -154,7 +166,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'hsl(var(--bg-primary))', color: '#fff', fontSize: '0.85rem' }}>Connecting...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: 'hsl(var(--bg-primary))', color: '#fff', fontSize: '0.85rem' }}>Connecting...</div>}>
       <LoginContent />
     </Suspense>
   )

@@ -19,8 +19,8 @@ export default function RootLoading() {
           width: '48px',
           height: '48px',
           borderRadius: '50%',
-          border: '3px solid rgba(255, 106, 19, 0.2)',
-          borderTopColor: 'var(--ball-orange)',
+          border: '3px solid hsla(343, 100%, 50%, 0.2)',
+          borderTopColor: 'hsl(var(--accent-red))',
           animation: 'spin 0.8s linear infinite',
         }} 
       />

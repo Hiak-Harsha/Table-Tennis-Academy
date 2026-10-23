@@ -23,7 +23,7 @@ export default function NotFound() {
         <div style={{ 
           fontSize: '3rem', 
           fontWeight: 900, 
-          color: 'var(--ball-orange)', 
+          color: 'hsl(var(--accent-red))', 
           letterSpacing: '-0.02em',
           marginBottom: '0.25rem' 
         }}>

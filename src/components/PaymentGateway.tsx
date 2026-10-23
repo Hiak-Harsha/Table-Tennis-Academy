@@ -486,7 +486,7 @@ export default function PaymentGateway({
             <Link
               href="/refunds"
               target="_blank"
-              style={{ color: 'var(--ball-orange)', textDecoration: 'underline' }}
+              style={{ color: 'hsl(var(--accent-blue))', textDecoration: 'underline' }}
             >
               Refund & Cancellation Policy
             </Link>

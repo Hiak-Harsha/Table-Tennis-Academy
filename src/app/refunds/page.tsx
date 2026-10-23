@@ -2,20 +2,20 @@ import Link from 'next/link'
 
 export const metadata = {
   title: 'Refund & Cancellation Policy | Table Tennis Academy',
-  description: 'Fee refund terms, tournament cancellation windows, and settlement timelines for Table Tennis Academy.',
+  description: 'Fee Refund Guidelines, Tournament Withdrawal Windows, and Cancellation Rules for Table Tennis Academy.',
 }
 
 export default function RefundPolicyPage() {
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--paddle-black)', color: 'var(--net-white)', padding: '2rem 1.5rem' }}>
-      <main id="main-content" style={{ maxWidth: '800px', margin: '0 auto', background: 'rgba(255,255,255,0.02)', padding: '2.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ minHeight: '100dvh', background: 'hsl(var(--bg-primary))', color: 'hsl(var(--text-primary))', padding: '2rem 1rem', width: '100%', boxSizing: 'border-box' }}>
+      <main id="main-content" style={{ maxWidth: '800px', margin: '0 auto', background: 'hsl(var(--bg-card))', padding: '2rem 1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', boxSizing: 'border-box' }}>
         <Link
           href="/"
           style={{
             display: 'inline-block',
-            color: 'var(--ball-orange)',
+            color: 'hsl(var(--accent-blue))',
             textDecoration: 'none',
-            fontSize: '0.9rem',
+            fontSize: '0.85rem',
             marginBottom: '1.5rem',
             fontWeight: 600,
           }}
@@ -23,48 +23,53 @@ export default function RefundPolicyPage() {
           ← Back to Academy Home
         </Link>
 
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', marginBottom: '0.5rem', color: '#fff' }}>
+        <h1 style={{ fontSize: '1.8rem', marginBottom: '0.5rem', color: '#fff' }}>
           Refund & Cancellation Policy
         </h1>
-        <p style={{ color: 'var(--net-muted)', fontSize: '0.85rem', marginBottom: '2rem' }}>
-          Standard Operational Guidelines | All Amounts in INR
+        <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.8rem', marginBottom: '2rem' }}>
+          Effective Date: October 2026 | Transparent Financial & Tournament Withdrawal Guidelines
         </p>
 
-        <section style={{ marginBottom: '2rem', lineHeight: '1.7', fontSize: '0.95rem' }}>
-          <h2 style={{ fontSize: '1.25rem', color: 'var(--ball-orange)', marginBottom: '0.5rem' }}>1. Monthly Academy Training Fees</h2>
-          <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
-            <li>Monthly academy coaching fees are non-refundable once the billing month has commenced.</li>
-            <li>For quarterly or annual advance payments, a pro-rated refund (excluding the current active month) may be approved upon written notice accompanied by a verified medical certificate.</li>
-            <li>Unattended sessions due to personal scheduling or travel cannot be credited or refunded, but make-up sessions may be arranged subject to coach table availability.</li>
-          </ul>
-        </section>
-
-        <section style={{ marginBottom: '2rem', lineHeight: '1.7', fontSize: '0.95rem' }}>
-          <h2 style={{ fontSize: '1.25rem', color: 'var(--ball-orange)', marginBottom: '0.5rem' }}>2. Tournament Entry Fees</h2>
-          <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
-            <li><strong>Full Refund:</strong> If cancellation is requested 48 hours or more prior to the scheduled draw and fixture publication date.</li>
-            <li><strong>Non-Refundable:</strong> Once tournament fixtures/brackets have been officially drawn, entry fees are non-refundable due to referee scheduling and tournament quota allocations.</li>
-            <li><strong>Tournament Cancellation:</strong> If an academy tournament is cancelled or postponed by organizers due to unforeseen facility maintenance or weather, 100% of entry fees will be refunded automatically.</li>
-          </ul>
-        </section>
-
-        <section style={{ marginBottom: '2rem', lineHeight: '1.7', fontSize: '0.95rem' }}>
-          <h2 style={{ fontSize: '1.25rem', color: 'var(--ball-orange)', marginBottom: '0.5rem' }}>3. Refund Processing & Timelines</h2>
+        <section style={{ marginBottom: '2rem', lineHeight: '1.7', fontSize: '0.9rem' }}>
+          <h2 style={{ fontSize: '1.15rem', color: 'hsl(var(--accent-red))', marginBottom: '0.5rem' }}>1. Monthly Academy Training Fees</h2>
           <p>
-            Approved refunds are credited back to the original payment source (UPI VPA or Bank Account).
-            Standard bank processing timelines apply:
+            Monthly and quarterly coaching fees fund reserved court capacity, coaching staff allocations, and training equipment.
           </p>
           <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
-            <li><strong>UPI Transactions:</strong> 2 to 4 business days.</li>
-            <li><strong>Net Banking / Debit:</strong> 5 to 7 business days.</li>
+            <li><strong>Advance Notice:</strong> Cancellation requests submitted at least 7 days before the start of a billing cycle are eligible for a 100% refund or credit carry-forward.</li>
+            <li><strong>Partial Usage:</strong> Once a monthly training batch has commenced, coaching fees are non-refundable for that billing cycle.</li>
+            <li><strong>Medical Exceptions:</strong> In the event of documented sports injuries or medical conditions requiring extended cessation of play (&gt; 2 weeks), athletes may freeze their subscription or request a pro-rata credit upon submitting a physician certificate.</li>
           </ul>
         </section>
 
-        <section style={{ marginBottom: '2rem', lineHeight: '1.7', fontSize: '0.95rem' }}>
-          <h2 style={{ fontSize: '1.25rem', color: 'var(--ball-orange)', marginBottom: '0.5rem' }}>4. Dispute Resolution & Help</h2>
+        <section style={{ marginBottom: '2rem', lineHeight: '1.7', fontSize: '0.9rem' }}>
+          <h2 style={{ fontSize: '1.15rem', color: 'hsl(var(--accent-red))', marginBottom: '0.5rem' }}>2. Tournament Entry Fees</h2>
           <p>
-            If you encounter duplicate charges, failed webhook confirmations, or payment discrepancies, please contact our financial desk with your UPI Reference Number / Transaction ID at{' '}
-            <strong style={{ color: 'var(--net-white)' }}>billing@tta-academy.com</strong>.
+            Sanctioned circuit tournaments feature strict bracket seeding and participant limits:
+          </p>
+          <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
+            <li><strong>Withdrawal before Registration Deadline:</strong> Full (100%) refund processed back to the original payment source.</li>
+            <li><strong>Withdrawal after Fixtures / Draw Published:</strong> Entry fees are non-refundable as tournament draws, court allocations, and prize pools are locked.</li>
+            <li><strong>Academy Event Cancellation:</strong> If a tournament is cancelled or rescheduled by TTA due to weather or operational grounds, participants receive an immediate full refund or complimentary registration into the rescheduled event.</li>
+          </ul>
+        </section>
+
+        <section style={{ marginBottom: '2rem', lineHeight: '1.7', fontSize: '0.9rem' }}>
+          <h2 style={{ fontSize: '1.15rem', color: 'hsl(var(--accent-red))', marginBottom: '0.5rem' }}>3. Refund Processing & Timelines</h2>
+          <p>
+            All approved refunds are credited back to the original payment method:
+          </p>
+          <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
+            <li><strong>UPI & Netbanking:</strong> 2 to 4 business days.</li>
+            <li><strong>Credit & Debit Cards:</strong> 5 to 7 business days, depending on issuing bank settlement cycles.</li>
+          </ul>
+        </section>
+
+        <section style={{ marginBottom: '2rem', lineHeight: '1.7', fontSize: '0.9rem' }}>
+          <h2 style={{ fontSize: '1.15rem', color: 'hsl(var(--accent-red))', marginBottom: '0.5rem' }}>4. Dispute Resolution & Help</h2>
+          <p>
+            For billing inquiries, receipt copies, or refund claims, please email{' '}
+            <strong style={{ color: '#fff' }}>accounts@tta-academy.com</strong> with your Student ID and transaction reference number.
           </p>
         </section>
       </main>

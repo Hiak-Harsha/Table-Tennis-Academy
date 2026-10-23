@@ -31,17 +31,17 @@ export default async function PlayerDirectory() {
   })
 
   return (
-    <div className="animate-fade-in" style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="animate-fade-in" style={{ height: 'calc(100dvh - 90px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: '0.75rem', flexShrink: 0 }}>
-        <h1 style={{ fontSize: '1.4rem' }}>Squad Chat & Players</h1>
-        <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>Academy athlete directory and real-time batch chat.</p>
+        <h1 style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>Athlete Circle</h1>
+        <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: 0 }}>Player directory and batch chat.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '0.75rem', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '0.75rem', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
         {/* Left: Player Cards */}
-        <div style={{ overflowY: 'auto', paddingRight: '0.5rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem' }}>
+        <div style={{ overflowY: 'auto', paddingRight: '0.5rem', minHeight: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 150px), 1fr))', gap: '0.5rem' }}>
             {students.map((s: any) => {
               const bt = batchConfig[s.batchType] || { label: s.batchType, color: '#60a5fa' }
               const isMe = s.userId === payload.id
@@ -49,16 +49,17 @@ export default async function PlayerDirectory() {
                 <div key={s.id} style={{
                   padding: '0.65rem', textAlign: 'center', borderRadius: '8px',
                   border: isMe ? '1px solid #3b82f6' : '1px solid var(--border-subtle)',
-                  background: isMe ? 'rgba(59,130,246,0.04)' : 'hsl(var(--bg-card))'
+                  background: isMe ? 'rgba(59,130,246,0.04)' : 'hsl(var(--bg-card))',
+                  boxSizing: 'border-box'
                 }}>
                   <div style={{
                     width: '36px', height: '36px', borderRadius: '50%',
                     background: `linear-gradient(135deg, ${getAvatarColor(s.fullName)}cc, ${getAvatarColor(s.fullName)}60)`,
-                    display: 'grid', placeItems: 'center', fontSize: '0.7rem', fontWeight: 700,
+                    display: 'grid', placeItems: 'center', fontSize: '0.75rem', fontWeight: 700,
                     color: '#fff', margin: '0 auto 0.4rem'
                   }}>{getInitials(s.fullName)}</div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.15rem', color: '#f1f5f9' }}>{s.fullName}</div>
-                  <span style={{ padding: '0.1rem 0.3rem', borderRadius: '3px', background: `${bt.color}10`, color: bt.color, fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase' }}>{bt.label}</span>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.15rem', color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.fullName}</div>
+                  <span style={{ padding: '0.1rem 0.35rem', borderRadius: '3px', background: `${bt.color}15`, color: bt.color, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase' }}>{bt.label}</span>
                 </div>
               )
             })}
@@ -66,7 +67,9 @@ export default async function PlayerDirectory() {
         </div>
 
         {/* Right: Chat */}
-        <BatchChat batchType={currentStudent.batchType} currentStudentId={currentStudent.id} />
+        <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <BatchChat batchType={currentStudent.batchType} currentStudentId={currentStudent.id} />
+        </div>
       </div>
     </div>
   )

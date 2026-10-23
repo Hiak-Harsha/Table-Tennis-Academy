@@ -12,9 +12,9 @@ interface NavTab {
 
 const TABS: NavTab[] = [
   { href: '/student', label: 'Dashboard', icon: '🏓', exact: true },
-  { href: '/student/fees', label: 'Fees', icon: '💳' },
-  { href: '/student/tournaments', label: 'Events', icon: '🏆' },
-  { href: '/student/connect', label: 'Squad Chat', icon: '💬' },
+  { href: '/student/fees', label: 'Payments', icon: '💳' },
+  { href: '/student/tournaments', label: 'Tournaments', icon: '🏆' },
+  { href: '/student/connect', label: 'Circle', icon: '🤝' },
 ]
 
 export default function StudentBottomNav() {
@@ -23,7 +23,7 @@ export default function StudentBottomNav() {
   return (
     <nav 
       aria-label="Mobile Navigation" 
-      className="mobile-bottom-nav"
+      className="mobile-bottom-nav mobile-only"
     >
       {TABS.map((tab) => {
         const isActive = tab.exact 
@@ -45,7 +45,7 @@ export default function StudentBottomNav() {
               minWidth: '56px',
               minHeight: '44px',
               borderRadius: '8px',
-              color: isActive ? 'var(--ball-orange)' : 'hsl(var(--text-muted))',
+              color: isActive ? 'hsl(var(--accent-red))' : 'hsl(var(--text-muted))',
               transition: 'color 0.15s ease',
               gap: '2px',
             }}

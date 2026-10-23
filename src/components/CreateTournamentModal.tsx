@@ -13,41 +13,34 @@ export default function CreateTournamentModal() {
   useEffect(() => {
     if (state?.success) {
       showToast(state.success, 'SUCCESS')
-      setIsOpen(false)
+      const timer = setTimeout(() => setIsOpen(false), 0)
+      return () => clearTimeout(timer)
     } else if (state?.error) {
       showToast(state.error, 'ERROR')
     }
   }, [state, showToast])
 
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen])
-
   const inputStyle = {
     width: '100%',
-    padding: '0.8rem 1rem',
+    padding: '0.7rem 1rem',
     background: 'hsl(var(--bg-primary))',
     border: '1px solid var(--border-subtle)',
     color: '#fff',
     borderRadius: 'var(--radius-md)',
     outline: 'none',
-    fontSize: '0.95rem',
-    transition: 'all 0.2s'
+    fontSize: '0.9rem',
+    boxSizing: 'border-box' as const,
+    transition: 'all 0.2s',
   }
 
   const labelStyle = {
     display: 'block',
-    marginBottom: '0.5rem',
+    marginBottom: '0.4rem',
     color: 'hsl(var(--text-muted))',
     fontSize: '0.7rem',
-    fontWeight: 900,
+    fontWeight: 700,
     textTransform: 'uppercase' as const,
-    letterSpacing: '0.1em'
+    letterSpacing: '0.08em',
   }
 
   return (
@@ -58,21 +51,14 @@ export default function CreateTournamentModal() {
 
       {isOpen && (
         <div 
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="tournament-modal-title"
           onClick={e => e.target === e.currentTarget && setIsOpen(false)}
-          style={{ 
-            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
-            background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'grid', 
-            placeItems: 'center', backdropFilter: 'blur(10px)', padding: '1.5rem' 
-          }}
+          className="modal-overlay"
         >
-          <div className="card glass animate-fade-in" style={{ width: '100%', maxWidth: '580px', padding: '2.5rem', border: '1px solid var(--border-medium)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem' }}>
+          <div className="card glass animate-fade-in modal-content" style={{ maxWidth: '560px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
               <div>
-                <h2 id="tournament-modal-title" style={{ fontSize: '1.75rem', marginBottom: '0.5rem', fontWeight: 900 }}>Create Tournament</h2>
-                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.9rem', margin: 0 }}>This will be published immediately to all player dashboards.</p>
+                <h2 style={{ fontSize: '1.4rem', marginBottom: '0.25rem', fontWeight: 700 }}>Create Tournament</h2>
+                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem', margin: 0 }}>This will be published immediately to all athlete dashboards.</p>
               </div>
               <button 
                 onClick={() => setIsOpen(false)} 
@@ -80,15 +66,15 @@ export default function CreateTournamentModal() {
               >✕</button>
             </div>
 
-            <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={labelStyle}>Tournament Name</label>
-                <input required name="name" type="text" placeholder="e.g. Winter Open Championship 2026" style={inputStyle} />
+                <label style={labelStyle}>Tournament Designation</label>
+                <input required name="name" type="text" placeholder="e.g. Winter Smash Championship 2026" style={inputStyle} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                 <div>
-                  <label style={labelStyle}>Tournament Date</label>
+                  <label style={labelStyle}>Operations Date</label>
                   <input required name="date" type="date" style={inputStyle} />
                 </div>
                 <div>
@@ -98,27 +84,27 @@ export default function CreateTournamentModal() {
               </div>
 
               <div>
-                <label style={labelStyle}>Event Venue / Arena</label>
-                <input required name="venue" type="text" placeholder="e.g. TTA Main Hall, Table 1-8" style={inputStyle} />
+                <label style={labelStyle}>Event Venue / Location</label>
+                <input required name="venue" type="text" placeholder="e.g. TTA Main Arena, Hall A" style={inputStyle} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                 <div>
-                  <label style={labelStyle}>Tournament Tier</label>
+                  <label style={labelStyle}>Performance Level</label>
                   <select required name="level" style={{ ...inputStyle, appearance: 'none' }}>
-                    <option value="BEGINNER">Foundational Tier</option>
+                    <option value="BEGINNER">Foundational</option>
                     <option value="INTERMEDIATE">Competitive Edge</option>
                     <option value="ADVANCED">Elite / Pro</option>
-                    <option value="OPEN">Open (All Tiers)</option>
+                    <option value="OPEN">Open (All Levels)</option>
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Eligibility Requirements</label>
-                  <input name="eligibility" type="text" placeholder="e.g. Under 18 or All registered players" style={inputStyle} />
+                  <label style={labelStyle}>Eligibility Constraints</label>
+                  <input name="eligibility" type="text" placeholder="e.g. All registered members" style={inputStyle} />
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                 <div>
                   <label style={labelStyle}>Max Capacity (Players)</label>
                   <input name="maxPlayers" type="number" min="2" placeholder="e.g. 32 (optional)" style={inputStyle} />
@@ -129,17 +115,17 @@ export default function CreateTournamentModal() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem' }}>
-                <LoadingButton loadingText="Publishing Tournament..." style={{ flex: 1, padding: '1.1rem' }}>
-                   Publish Tournament
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem', flexWrap: 'wrap' }}>
+                <LoadingButton loadingText="Publishing Event..." style={{ flex: '1 1 180px', padding: '0.75rem' }}>
+                   Confirm & Publish Event
                 </LoadingButton>
                 <button 
                   type="button" 
                   className="btn btn-secondary" 
                   onClick={() => setIsOpen(false)} 
-                  style={{ flex: 'none', padding: '0.8rem 2rem' }}
+                  style={{ flex: '0 0 auto', padding: '0.75rem 1.5rem' }}
                 >
-                  Cancel
+                  Discard
                 </button>
               </div>
             </form>

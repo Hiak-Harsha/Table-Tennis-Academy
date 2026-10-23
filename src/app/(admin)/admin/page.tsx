@@ -1,6 +1,5 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import Image from 'next/image'
 import { formatINR } from '@/lib/currency'
 
 export const dynamic = 'force-dynamic'
@@ -15,40 +14,35 @@ export default async function AdminDashboard() {
   const revenueAmount = totalRevenue._sum.amount || 0
 
   return (
-    <div className="animate-fade-in" style={{ paddingBottom: '2rem' }}>
+    <div className="animate-fade-in" style={{ paddingBottom: '2rem', width: '100%', boxSizing: 'border-box' }}>
       {/* Compact Hero */}
       <div style={{
         position: 'relative', borderRadius: '12px', overflow: 'hidden',
         marginBottom: '1.25rem', display: 'flex', alignItems: 'center',
         padding: '1.25rem 1.5rem', border: '1px solid var(--border-subtle)',
-        background: 'hsla(var(--bg-card), 0.5)', minHeight: '110px'
+        background: 'hsla(var(--bg-card), 0.5)', minHeight: '110px',
+        boxSizing: 'border-box', width: '100%'
       }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-          <Image
-            src="/images/admin_hero.png"
-            alt="Coach Operations Desk banner"
-            fill
-            sizes="(max-width: 1200px) 100vw, 1100px"
-            style={{ objectFit: 'cover', opacity: 0.2 }}
-          />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, hsl(var(--bg-primary)) 15%, transparent 85%)', zIndex: 1 }} />
+          <img src="/images/admin_hero.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.2 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, hsl(var(--bg-primary)) 15%, transparent 85%)' }} />
         </div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <div className="animate-pulse-subtle" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Coach Desk Active</span>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>System Online</span>
           </div>
-          <h1 style={{ fontSize: '1.5rem' }}>Academy Operations</h1>
+          <h1 style={{ fontSize: '1.5rem', marginBottom: '0.35rem' }}>Academy Operations</h1>
           <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem', margin: 0 }}>
-            Real-time overview of academy players, training batches, and operations.
+            Real-time telemetry of athlete performance and operations.
           </p>
         </div>
       </div>
 
       {/* Key Metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '0.75rem', marginBottom: '1.25rem', width: '100%', boxSizing: 'border-box' }}>
         {[
-          { label: 'Active Roster', value: studentCount, icon: '👥', color: 'hsl(var(--accent-blue))', sub: 'Registered players' },
+          { label: 'Active Roster', value: studentCount, icon: '👥', color: 'hsl(var(--accent-blue))', sub: 'Registered athletes' },
           { label: 'Revenue', value: formatINR(revenueAmount), icon: '💰', color: '#10b981', sub: 'Collected payments' },
           { label: 'Pending', value: pendingPayments, icon: '⚠️', color: '#f59e0b', sub: 'Outstanding dues' },
         ].map((m, i) => (
@@ -63,14 +57,14 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      {/* Main Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1.25rem' }}>
+      {/* Main Grid — Responsive 1fr or 2-col on desktop */}
+      <div className="dashboard-layout-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))' }}>
 
         {/* Left: Recent Students */}
-        <div className="card">
+        <div className="card" style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ fontSize: '0.9rem' }}>👤</span> Recent Players
+              <span style={{ fontSize: '0.9rem' }}>👤</span> Recent Athletes
             </h3>
             <Link href="/admin/students" style={{ color: 'hsl(var(--accent-blue))', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
           </div>
@@ -79,10 +73,11 @@ export default async function AdminDashboard() {
               <div key={s.id} style={{
                 display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.75rem',
                 alignItems: 'center', padding: '0.6rem 0.75rem', borderRadius: '8px',
-                background: 'rgba(255,255,255,0.015)', border: '1px solid transparent', transition: '0.15s'
+                background: 'rgba(255,255,255,0.015)', border: '1px solid transparent', transition: '0.15s',
+                boxSizing: 'border-box'
               }}>
-                <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>{s.fullName}</div>
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{s.fullName}</div>
                   <div style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>{s.studentId}</div>
                 </div>
                 <span style={{
@@ -90,25 +85,17 @@ export default async function AdminDashboard() {
                   color: s.batchType === 'ADVANCED' ? '#ef4444' : s.batchType === 'INTERMEDIATE' ? '#f59e0b' : '#3b82f6',
                   padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase'
                 }}>{s.batchType}</span>
-                <span
-                  title={`Status: ${s.enrollmentStatus}`}
-                  aria-label={`Status: ${s.enrollmentStatus}`}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                    fontSize: '0.65rem', fontWeight: 700,
-                    color: s.enrollmentStatus === 'ACTIVE' ? '#10b981' : '#94a3b8'
-                  }}
-                >
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
-                  {s.enrollmentStatus}
-                </span>
+                <span style={{
+                  width: '7px', height: '7px', borderRadius: '50%',
+                  background: s.enrollmentStatus === 'ACTIVE' ? '#10b981' : '#64748b'
+                }} />
               </div>
             ))}
           </div>
         </div>
 
         {/* Right Sidebar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', minWidth: 0 }}>
 
           {/* Quick Actions */}
           <div className="card" style={{ padding: '1rem' }}>
@@ -138,11 +125,11 @@ export default async function AdminDashboard() {
           <div className="card">
             <h4 style={{ fontSize: '0.65rem', marginBottom: '0.75rem', color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Upcoming Events</h4>
             {upcomingTournaments.length === 0 ? (
-              <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.7rem', fontStyle: 'italic' }}>No scheduled events.</p>
+              <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.75rem', fontStyle: 'italic', margin: 0 }}>No scheduled events.</p>
             ) : upcomingTournaments.map((t: any) => (
               <div key={t.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-subtle)' }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t.name}</div>
-                <div style={{ fontSize: '0.65rem', color: 'hsl(var(--text-muted))', marginTop: '0.15rem' }}>
+                <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', marginTop: '0.15rem' }}>
                   {new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {t.venue}
                 </div>
               </div>

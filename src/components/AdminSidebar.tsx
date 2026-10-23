@@ -5,10 +5,10 @@ import { usePathname } from 'next/navigation'
 import { logoutAction } from '@/actions/auth'
 
 const navLinks = [
-  { href: '/admin', label: 'Coach Desk', icon: '📋', exact: true },
-  { href: '/admin/students', label: 'Player Roster', icon: '👥', exact: false },
-  { href: '/admin/fees', label: 'Academy Finances', icon: '💰', exact: false },
-  { href: '/admin/tournaments', label: 'Tournaments', icon: '🏆', exact: false },
+  { href: '/admin', label: 'Command Center', icon: '🌌', exact: true },
+  { href: '/admin/students', label: 'Roster', icon: '👥', exact: false },
+  { href: '/admin/fees', label: 'Finances', icon: '💰', exact: false },
+  { href: '/admin/tournaments', label: 'Tournaments', icon: '⚡', exact: false },
   { href: '/admin/chat', label: 'Batch Chat', icon: '💬', exact: false },
 ]
 
@@ -40,16 +40,16 @@ export default function AdminSidebar({ isOpen, onClose }: SidebarProps) {
 
         <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--table-blue-light)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>Coach Desk</div>
+            <div style={{ fontSize: '0.55rem', fontWeight: 700, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>Admin Console</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <div style={{
                 width: '32px', height: '32px', borderRadius: '8px',
-                background: 'linear-gradient(135deg, var(--table-blue), #1e3a8a)',
+                background: 'linear-gradient(135deg, hsl(var(--accent-blue)), #1d4ed8)',
                 display: 'grid', placeItems: 'center', fontSize: '0.9rem'
               }}>🏓</div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>TTA Head Coach</div>
-                <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Administrator</div>
+                <div style={{ fontWeight: 700, fontSize: '0.8rem' }}>TTA Command</div>
+                <div style={{ fontSize: '0.6rem', color: 'hsl(var(--text-muted))' }}>Administrator</div>
               </div>
             </div>
           </div>

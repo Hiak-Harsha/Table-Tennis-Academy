@@ -13,66 +13,52 @@ export default function AddStudentModal() {
   useEffect(() => {
     if (state?.success) {
       showToast(state.success, 'SUCCESS')
-      setIsOpen(false)
+      const timer = setTimeout(() => setIsOpen(false), 0)
+      return () => clearTimeout(timer)
     } else if (state?.error) {
       showToast(state.error, 'ERROR')
     }
   }, [state, showToast])
 
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen])
-
   const inputStyle = {
     width: '100%',
-    padding: '0.8rem 1rem',
+    padding: '0.7rem 1rem',
     background: 'hsl(var(--bg-primary))',
     border: '1px solid var(--border-subtle)',
     color: '#fff',
     borderRadius: 'var(--radius-md)',
     outline: 'none',
-    fontSize: '0.95rem',
-    transition: 'all 0.2s'
+    fontSize: '0.9rem',
+    boxSizing: 'border-box' as const,
+    transition: 'all 0.2s',
   }
 
   const labelStyle = {
     display: 'block',
-    marginBottom: '0.5rem',
+    marginBottom: '0.4rem',
     color: 'hsl(var(--text-muted))',
     fontSize: '0.7rem',
-    fontWeight: 900,
+    fontWeight: 700,
     textTransform: 'uppercase' as const,
-    letterSpacing: '0.1em'
+    letterSpacing: '0.08em',
   }
 
   return (
     <>
       <button className="btn btn-primary" onClick={() => setIsOpen(true)}>
-        <span>+</span> Register New Player
+        <span>+</span> Register New Athlete
       </button>
 
       {isOpen && (
         <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="add-player-title"
           onClick={e => e.target === e.currentTarget && setIsOpen(false)}
-          style={{ 
-            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
-            background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', 
-            alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', padding: '1.5rem' 
-          }}
+          className="modal-overlay"
         >
-          <div className="card glass animate-fade-in" style={{ width: '100%', maxWidth: '580px', padding: '2.5rem', border: '1px solid var(--border-medium)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem' }}>
+          <div className="card glass animate-fade-in modal-content" style={{ maxWidth: '540px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
               <div>
-                <h2 id="add-player-title" style={{ fontSize: '1.75rem', marginBottom: '0.5rem', fontWeight: 900 }}>Register Player</h2>
-                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.9rem', margin: 0 }}>This creates an official record and student account.</p>
+                <h2 style={{ fontSize: '1.4rem', marginBottom: '0.25rem', fontWeight: 700 }}>Register Athlete</h2>
+                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem', margin: 0 }}>Create official student record and portal access account.</p>
               </div>
               <button 
                 onClick={() => setIsOpen(false)} 
@@ -80,8 +66,8 @@ export default function AddStudentModal() {
               >✕</button>
             </div>
 
-            <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem' }}>
+            <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                 <div>
                   <label style={labelStyle}>Full Name</label>
                   <input required name="name" type="text" placeholder="e.g. Marcus Vane" style={inputStyle} />
@@ -102,7 +88,7 @@ export default function AddStudentModal() {
                 <input required name="password" type="password" placeholder="••••••••" style={inputStyle} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                 <div>
                   <label style={labelStyle}>Curriculum Tier</label>
                   <select required name="batch" style={{ ...inputStyle, appearance: 'none' }}>
@@ -112,25 +98,25 @@ export default function AddStudentModal() {
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Assigned Coach</label>
-                  <input name="coachName" type="text" placeholder="e.g. Coach Raman" style={inputStyle} />
+                  <label style={labelStyle}>Assigned Mentor</label>
+                  <input name="coachName" type="text" placeholder="Coach Name" style={inputStyle} />
                 </div>
               </div>
 
               <div>
-                <label style={labelStyle}>Emergency Contact Information</label>
-                <input name="contactDetails" type="text" placeholder="Guardian name or secondary phone" style={inputStyle} />
+                <label style={labelStyle}>Emergency Contact</label>
+                <input name="contactDetails" type="text" placeholder="Contact person or email" style={inputStyle} />
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <LoadingButton loadingText="Registering..." style={{ flex: 1, padding: '1.1rem' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                <LoadingButton loadingText="Registering..." style={{ flex: '1 1 180px', padding: '0.75rem' }}>
                    Confirm & Create Account
                 </LoadingButton>
                 <button 
                   type="button" 
                   className="btn btn-secondary" 
                   onClick={() => setIsOpen(false)} 
-                  style={{ flex: 'none', padding: '0.8rem 2rem' }}
+                  style={{ flex: '0 0 auto', padding: '0.75rem 1.5rem' }}
                 >
                   Discard
                 </button>

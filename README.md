@@ -1,6 +1,6 @@
 # Table Tennis Academy (TTA) — Management Portal
 
-A high-performance, production-grade academy operations and athlete portal engineered with **Next.js 16 (App Router)**, **React 19**, **Prisma ORM**, **PostgreSQL**, and the **Match Night Design System**.
+A high-performance, production-grade academy operations and athlete portal engineered with **Next.js 16 (App Router)**, **React 19**, **Prisma ORM**, **PostgreSQL**, and clean responsive typography.
 
 ---
 
@@ -73,7 +73,7 @@ Table Tennis Academy (TTA) provides enterprise-grade academy administration, ath
 - **Authentication & Cryptography**: `jose` (JWT), `bcryptjs` (Cost 12), Node.js native `crypto`
 - **Validation**: Zod `v3.25` schema validation across all inputs and server actions
 - **Realtime Engine**: Server-Sent Events (SSE) with circular ring-buffer replay and channel authorization
-- **Design System**: Match Night Custom Design Tokens (`tokens.css`), Google Fonts (`Big_Shoulders`, `Barlow`, `Chakra_Petch`)
+- **Design System**: Compact, fully responsive modern design system with Inter typography and zero sizing overflow
 - **Testing**: Vitest `v5.0` (Unit & Integration, 20 test suites, 160+ tests), Playwright (E2E)
 
 ---

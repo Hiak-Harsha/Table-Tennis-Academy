@@ -18,10 +18,10 @@ Thank you for contributing to the TTA Portal! To maintain our production-readine
    - Interactive elements must support visible keyboard focus rings (`:focus-visible`).
    - Modals must be accessible dialogs (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`) and dismissable via the `Escape` key.
 
-3. **Match Night Design Aesthetics**:
-   - Utilize standardized CSS custom properties from `src/styles/tokens.css`.
-   - Never use generic red/green/blue. Use authentic table tennis palette (`--ball-orange`, `--table-blue`, `--court-green`, `--umpire-red`, `--paddle-black`).
-   - Maintain zero sci-fi / video-game terminology. Use authentic sports terminology (Athletes, Players, Coaches, Desk, Tournaments).
+3. **Design Aesthetics & Ergonomics**:
+   - Utilize standardized CSS custom properties from `src/app/globals.css`.
+   - Ensure all layouts, modals, and tables are fully responsive with zero sizing overflow on mobile.
+   - Maintain professional academy sports terminology.
 
 ---
 

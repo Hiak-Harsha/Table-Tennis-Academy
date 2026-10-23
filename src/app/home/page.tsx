@@ -178,7 +178,7 @@ export default function Home() {
             <Link href="/terms" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.85rem' }}>Terms & Rules</Link>
             <Link href="/refunds" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.85rem' }}>Refund Policy</Link>
             <Link href="/api/health" target="_blank" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.85rem' }}>System Status</Link>
-            <Link href="/login" style={{ color: 'var(--ball-orange)', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600 }}>Sign In →</Link>
+            <Link href="/login" style={{ color: 'hsl(var(--accent-red))', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600 }}>Sign In →</Link>
           </nav>
         </div>
       </footer>

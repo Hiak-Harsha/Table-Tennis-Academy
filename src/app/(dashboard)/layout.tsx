@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import StudentSidebar from '@/components/StudentSidebar'
-import StudentBottomNav from '@/components/StudentBottomNav'
 import MobileHeader from '@/components/MobileHeader'
 import NotificationBell from '@/components/NotificationBell'
 
@@ -10,9 +9,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div style={{ display: 'flex', minHeight: '100dvh', background: 'hsl(var(--bg-primary))' }}>
-      <a href="#main-content" className="skip-to-content">Skip to content</a>
-      <MobileHeader portalName="TTA Player Portal" onMenuToggle={() => setSidebarOpen(true)} />
+    <div style={{ display: 'flex', minHeight: '100dvh', background: 'hsl(var(--bg-primary))', width: '100%', overflowX: 'hidden' }}>
+      <MobileHeader portalName="TTA Athlete" onMenuToggle={() => setSidebarOpen(true)} />
       
       <StudentSidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
       
@@ -21,7 +19,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         display: 'flex', 
         flexDirection: 'column', 
         overflow: 'hidden',
-        width: '100%' 
+        width: '100%',
+        minWidth: 0,
       }}>
         <header className="desktop-only" style={{ 
           height: '56px', 
@@ -33,24 +32,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           padding: '0 2rem', 
           flexShrink: 0 
         }}>
-          <div style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            TTA Elite · Player Portal · Live Match & Training Sync
+          <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            TTA Elite · Athlete Portal · Real-time Sync Active
           </div>
           <NotificationBell />
         </header>
 
-        <div className="main-content-viewport has-bottom-nav" style={{ 
-          padding: '2rem 1.5rem', 
+        <div className="main-content-viewport" style={{ 
+          padding: '1.5rem 1rem', 
           flex: 1, 
-          overflowY: 'auto'
+          overflowY: 'auto',
+          boxSizing: 'border-box',
+          width: '100%',
         }}>
-          <div id="main-content" className="academy-container" tabIndex={-1}>
+          <div className="nexus-container">
             {children}
           </div>
         </div>
       </main>
-
-      <StudentBottomNav />
     </div>
   )
 }
