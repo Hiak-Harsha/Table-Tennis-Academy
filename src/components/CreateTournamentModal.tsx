@@ -106,6 +106,17 @@ export default function CreateTournamentModal() {
                 </div>
               </div>
 
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                <div>
+                  <label style={labelStyle}>Max Capacity (Players)</label>
+                  <input name="maxPlayers" type="number" min="2" placeholder="e.g. 32 (optional)" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Registration Cutoff</label>
+                  <input name="registrationDeadline" type="date" style={inputStyle} />
+                </div>
+              </div>
+
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem' }}>
                 <LoadingButton loadingText="Publishing Event..." style={{ flex: 1, padding: '1.1rem' }}>
                    Confirm & Publish Event

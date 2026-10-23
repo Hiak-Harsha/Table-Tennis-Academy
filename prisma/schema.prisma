@@ -121,6 +121,8 @@ model Tournament {
   level               String
   entryFee            Int                 // Stored in Paise (1 INR = 100 Paise)
   eligibilityCriteria String?
+  maxPlayers          Int?                // Maximum participant capacity
+  registrationDeadline DateTime?          // Registration cutoff timestamp
   createdAt           DateTime            @default(now())
   participants        TournamentPayment[]
 

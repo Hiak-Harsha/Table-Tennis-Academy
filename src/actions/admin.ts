@@ -2,7 +2,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { requireAdmin, requireAny } from '@/lib/auth-guard'
+import { requireAdmin } from '@/lib/auth-guard'
 import { hashPassword } from '@/lib/password'
 import { rupeesToPaise } from '@/lib/currency'
 import {
@@ -11,9 +11,13 @@ import {
   BroadcastSchema,
 } from '@/lib/validations'
 import { realtimeBus } from '@/lib/realtime/bus'
+import { generateStudentId } from '@/lib/student-id'
+import { isValidStudentStatusTransition, StudentEnrollmentStatusEnum } from '@/lib/student-state'
+import { normalizePhone } from '@/lib/phone'
+import { isFutureDate } from '@/lib/date'
 import { z } from 'zod'
 
-export async function createStudentAction(prevState: any, formData: FormData) {
+export async function createStudentAction(prevState: unknown, formData: FormData) {
   try {
     await requireAdmin()
 
@@ -28,14 +32,15 @@ export async function createStudentAction(prevState: any, formData: FormData) {
       contactDetails: formData.get('contactDetails') || undefined,
     })
 
-    const studentIdStr = 'TTA-' + Math.floor(1000 + Math.random() * 9000)
+    // Monotonically generated collision-free student ID
+    const studentIdStr = await generateStudentId()
 
     const existing = await prisma.user.findUnique({ where: { phone: validated.phone } })
     if (existing) return { error: `Phone number ${validated.phone} is already registered.` }
 
     const hashedPassword = await hashPassword(validated.password)
 
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
           phone: validated.phone,
@@ -61,17 +66,26 @@ export async function createStudentAction(prevState: any, formData: FormData) {
     revalidatePath('/admin/students')
     revalidatePath('/admin')
     return { success: `✓ ${validated.name} registered as ${studentIdStr}.` }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
-    return { error: error.message || 'Registration failed. Please check all fields and try again.' }
+    const message = error instanceof Error ? error.message : 'Registration failed.'
+    return { error: message }
   }
 }
 
-export async function updateStudentAction(prevState: any, formData: FormData) {
+export async function updateStudentAction(prevState: unknown, formData: FormData) {
   try {
     await requireAdmin()
 
     const id = formData.get('id') as string
+    if (!id) return { error: 'Student ID is required.' }
+
+    const student = await prisma.student.findUnique({
+      where: { id },
+      include: { user: true },
+    })
+    if (!student) return { error: 'Student record not found.' }
+
     const validated = StudentRegistrationSchema.partial().parse({
       name: formData.get('fullName'),
       batch: formData.get('batchType'),
@@ -79,30 +93,86 @@ export async function updateStudentAction(prevState: any, formData: FormData) {
       coachName: formData.get('coachName') || undefined,
       contactDetails: formData.get('contactDetails') || undefined,
     })
-    const enrollmentStatus = (formData.get('enrollmentStatus') as string) || 'ACTIVE'
 
-    await prisma.student.update({
-      where: { id },
-      data: {
-        fullName: validated.name,
-        batchType: validated.batch,
-        age: validated.age,
-        coachName: validated.coachName || null,
-        contactDetails: validated.contactDetails || null,
-        enrollmentStatus,
-      },
+    // Status transition validation via authoritative state machine
+    const rawTargetStatus = formData.get('enrollmentStatus') as string
+    let targetStatus = student.enrollmentStatus
+    if (rawTargetStatus && rawTargetStatus !== student.enrollmentStatus) {
+      const statusValidation = StudentEnrollmentStatusEnum.safeParse(rawTargetStatus)
+      if (!statusValidation.success) {
+        return { error: `Invalid enrollment status: ${rawTargetStatus}` }
+      }
+      const transitionCheck = isValidStudentStatusTransition(student.enrollmentStatus, rawTargetStatus)
+      if (!transitionCheck.valid) {
+        return { error: transitionCheck.reason || 'Illegal status transition.' }
+      }
+      targetStatus = rawTargetStatus
+    }
+
+    // Optional phone change validation
+    const rawPhone = formData.get('phone') as string
+    let normalizedPhone: string | null = null
+    if (rawPhone && rawPhone.trim()) {
+      try {
+        normalizedPhone = normalizePhone(rawPhone)
+        if (normalizedPhone !== student.user.phone) {
+          const phoneConflict = await prisma.user.findUnique({ where: { phone: normalizedPhone } })
+          if (phoneConflict) {
+            return { error: `Phone number ${normalizedPhone} is already in use by another account.` }
+          }
+        }
+      } catch (phoneErr: unknown) {
+        return { error: phoneErr instanceof Error ? phoneErr.message : 'Invalid phone number format.' }
+      }
+    }
+
+    // Optional admin password reset
+    const newPassword = formData.get('newPassword') as string
+    let newPasswordHash: string | null = null
+    if (newPassword && newPassword.trim()) {
+      if (newPassword.length < 8) {
+        return { error: 'Password must be at least 8 characters.' }
+      }
+      newPasswordHash = await hashPassword(newPassword)
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Update student profile
+      await tx.student.update({
+        where: { id },
+        data: {
+          fullName: validated.name,
+          batchType: validated.batch,
+          age: validated.age,
+          coachName: validated.coachName || null,
+          contactDetails: validated.contactDetails || null,
+          enrollmentStatus: targetStatus,
+        },
+      })
+
+      // Update user credentials if phone or password changed
+      if (normalizedPhone || newPasswordHash) {
+        await tx.user.update({
+          where: { id: student.userId },
+          data: {
+            ...(normalizedPhone ? { phone: normalizedPhone } : {}),
+            ...(newPasswordHash ? { passwordHash: newPasswordHash } : {}),
+          },
+        })
+      }
     })
 
     revalidatePath('/admin/students')
     revalidatePath('/admin')
     return { success: 'Student profile updated successfully.' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
-    return { error: `Update failed: ${error?.message || 'Unknown error'}` }
+    const message = error instanceof Error ? error.message : 'Update failed.'
+    return { error: `Update failed: ${message}` }
   }
 }
 
-export async function broadcastNotificationAction(prevState: any, formData: FormData) {
+export async function broadcastNotificationAction(prevState: unknown, formData: FormData) {
   try {
     await requireAdmin()
 
@@ -132,7 +202,7 @@ export async function broadcastNotificationAction(prevState: any, formData: Form
       },
     })
 
-    // Asynchronous non-blocking background fanout to individual athlete inboxes (with full text)
+    // Asynchronous non-blocking background fanout to individual athlete inboxes (preserving full message without truncation)
     queueMicrotask(async () => {
       try {
         const allUsers = await prisma.user.findMany({ where: { role: 'STUDENT' }, select: { id: true } })
@@ -150,24 +220,36 @@ export async function broadcastNotificationAction(prevState: any, formData: Form
 
     revalidatePath('/student')
     return { success: `Broadcasted to Academy Global Hub in real-time.` }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
-    return { error: error.message || 'Broadcast Protocol Failed' }
+    const message = error instanceof Error ? error.message : 'Broadcast Protocol Failed'
+    return { error: message }
   }
 }
 
-export async function createTournamentAction(prevState: any, formData: FormData) {
+export async function createTournamentAction(prevState: unknown, formData: FormData) {
   try {
     await requireAdmin()
-    
+
     const validated = TournamentSchema.parse({
       name: formData.get('name'),
       venue: formData.get('venue'),
       level: formData.get('level'),
       entryFee: formData.get('entryFee'),
       date: formData.get('date'),
-      eligibility: formData.get('eligibility')
+      eligibility: formData.get('eligibility'),
+      maxPlayers: formData.get('maxPlayers'),
+      registrationDeadline: formData.get('registrationDeadline'),
     })
+
+    // Tournament date must be in future
+    if (!isFutureDate(validated.date)) {
+      return { error: 'Tournament date must be scheduled in the future.' }
+    }
+
+    if (validated.registrationDeadline && !isFutureDate(validated.registrationDeadline)) {
+      return { error: 'Registration deadline must be in the future.' }
+    }
 
     await prisma.tournament.create({
       data: {
@@ -177,57 +259,17 @@ export async function createTournamentAction(prevState: any, formData: FormData)
         entryFee: rupeesToPaise(validated.entryFee),
         eligibilityCriteria: validated.eligibility || null,
         date: validated.date,
+        maxPlayers: validated.maxPlayers || null,
+        registrationDeadline: validated.registrationDeadline || null,
       },
     })
 
     revalidatePath('/admin/tournaments')
     revalidatePath('/student/tournaments')
-    return { success: `Tournament "${validated.name}" published.` }
-  } catch (error: any) {
+    return { success: `Tournament "${validated.name}" published successfully.` }
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
-    return { error: error.message || 'Failed to create tournament.' }
-  }
-}
-
-export async function registerForTournamentAction(prevState: any, formData: FormData) {
-  try {
-    const session = await requireAny()
-
-    const tournamentId = formData.get('tournamentId') as string
-    let studentId = formData.get('studentId') as string
-
-    // Security: Only allow student to register for themselves
-    if (session.role === 'STUDENT') {
-      if (session.studentId !== studentId && session.internalStudentId !== studentId) {
-        return { error: 'Access Denied: Cannot register for another athlete.' }
-      }
-      studentId = session.internalStudentId || studentId
-    }
-
-    if (!tournamentId || !studentId) return { error: 'Missing registration parameters.' }
-
-    const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId } })
-    if (!tournament) return { error: 'Tournament not found.' }
-
-    const existing = await prisma.tournamentPayment.findFirst({
-      where: { studentId, tournamentId },
-    })
-    if (existing) return { error: 'Athlete is already registered for this tournament.' }
-
-    await prisma.tournamentPayment.create({
-      data: {
-        tournamentId,
-        studentId,
-        amountPaid: tournament.entryFee,
-        paymentStatus: 'PAID',
-        paymentDate: new Date(),
-        confirmationDetails: `UPI_REF_${Math.floor(Math.random() * 1000000)}`,
-      },
-    })
-
-    revalidatePath('/student/tournaments')
-    return { success: 'Tournament registration successful!' }
-  } catch (error: any) {
-    return { error: error.message || 'Registration failed' }
+    const message = error instanceof Error ? error.message : 'Failed to create tournament.'
+    return { error: message }
   }
 }

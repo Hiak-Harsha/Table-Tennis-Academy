@@ -72,6 +72,14 @@ export const TournamentSchema = z.object({
   ),
   date: z.string().transform((v) => new Date(v)),
   eligibility: z.string().optional().transform(sanitizeOptionalText),
+  maxPlayers: z.preprocess(
+    (v) => (v === '' || v === undefined || v === null ? undefined : Number(v)),
+    z.number().int().min(2, 'Capacity must be at least 2 players.').optional()
+  ),
+  registrationDeadline: z
+    .string()
+    .optional()
+    .transform((v) => (v ? new Date(v) : undefined)),
 })
 
 /**

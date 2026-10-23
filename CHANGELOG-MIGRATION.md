@@ -246,5 +246,54 @@ All breaking changes, schema modifications, security updates, and URL/env variab
   - `tests/unit/realtime-bus.test.ts` (6 tests): Publish/subscribe routing, unsubscribe cleanup, replay buffer backfill, and ring-buffer overflow bounds.
 - Full verification gates passed: `npm test` (115 passed), `npm run lint` (0 errors), `npx tsc --noEmit` (0 errors), and `npm run build` (successful compilation and route bundling).
 
+---
+
+## Phase 6: Accuracy & Business-Logic Fixes (Completed)
+
+### 1. Authoritative Fee Status Engine & Overhaul (`src/lib/fee-status.ts`, `src/app/(dashboard)/student/fees/page.tsx`)
+- **Complete Fees Schedule**: Replaced the faulty `fees[0]` single-record display. The page now lists all fees sorted in strict financial priority: `OVERDUE` (oldest first) → `DUE` (today) → `UPCOMING` (future) → `PAID` (most recent first).
+- **Date-Only Semantics & Dynamic Status Computation**: Computed authoritative statuses using `compareKolkataDates` relative to the current calendar day in `Asia/Kolkata` (IST), properly identifying overdue vs today's due vs future subscription cycles.
+- **Server-Side Financial Metrics**: Authoritatively computed `totalOutstandingPaise`, `totalOverduePaise`, `totalDuePaise`, and `totalPaidPaise` in integer paise without IEEE 754 floating-point rounding errors.
+- **"Pay Next Due" Targeting**: Automatically routes the single primary CTA to the oldest unpaid invoice (`nextPayableFee`), highlighting the urgent action required.
+- **Dynamic Identity Pass Badge**: Renders real-time compliance status: `✓ AUTHORIZED ENTRY` when zero overdue fees exist, and `⚠ ACCESS RESTRICTED` with an overdue counter otherwise.
+
+### 2. Single Authoritative Tournament Registration Action (`src/actions/tournaments.ts`)
+- **Consolidated Redundant Actions**: Eliminated 3 divergent implementations across `admin.ts` and `student.ts`, creating one authoritative action: `registerForTournamentAction`.
+- **Enforced Registration Windows & Capacity**:
+  - Enforced tournament date in future (`isFutureDate`).
+  - Enforced registration deadline cutoff timestamp (`checkTournamentRegistrationWindow`).
+  - Added `maxPlayers` and `registrationDeadline` to `Tournament` model in `prisma/schema.prisma` and enforced participant capacity checks (`checkTournamentCapacity`).
+- **Strict Multi-Tier Eligibility Rules (`src/lib/tournament-eligibility.ts`)**:
+  - Enforced active enrollment (`enrollmentStatus === 'ACTIVE'`).
+  - Enforced curriculum tier matching (Beginner athletes barred from Advanced events, Beginner-only events restricted to Beginner athletes).
+  - Enforced age restrictions (e.g. Under-15 / U-18 tournaments parsed and validated against athlete age).
+  - Enforced database-level unique constraint (`@@unique([studentId, tournamentId])`) preventing duplicate registrations.
+  - Sourced authoritative pricing directly from `tournament.entryFee` in the database, ignoring client overrides. Supports instant free entry when `entryFee === 0`.
+
+### 3. Student Administration Lifecycle & State Machine (`src/lib/student-state.ts`, `src/actions/admin.ts`, `src/components/EditStudentForm.tsx`)
+- **Formal Enrollment State Machine**: Validates all lifecycle transitions between `ACTIVE`, `INACTIVE`, `SUSPENDED`, and `GRADUATED` with `isValidStudentStatusTransition`. Disallows invalid leaps (e.g. `SUSPENDED` directly to `GRADUATED`) and arbitrary unvalidated form data casts.
+- **Mobile Number Updates with E.164 Normalization**: Allows administrator to update student contact phones, validating format and uniqueness against the `User` table.
+- **Audited Password Resets**: Added secure admin password reset option, hashing new passwords with bcrypt cost 12.
+- **Collision-Resistant Student ID Generator (`src/lib/student-id.ts`)**: Replaced `TTA-` + random 4-digit generation (which suffered from birthday paradox collisions at scale) with a monotonic sequence counter and automated retry loop (`TTA-01001`, `TTA-01002`, etc.).
+
+### 4. Timezone Standardization (`src/lib/date.ts`)
+- Standardized all date storage to UTC and all UI presentation to `Asia/Kolkata` (IST) with a unified `formatDate` helper.
+- Implemented `compareKolkataDates` for calendar day comparisons that correctly handle UTC midnight boundary crossings (+05:30 offset).
+
+### 5. Dead & Duplicate Code Purged
+- Deleted `src/actions/student.ts` (contained redundant/dead `processFeePayment`, `registerForTournament`, and `registerForTournamentAction`).
+- Deleted `src/components/EditStudentModal.tsx` (unused duplicate of `EditStudentForm.tsx`).
+- Deleted `src/components/PayFeeButton.tsx` (unused duplicate of `FeePaymentClient.tsx`).
+- Removed duplicate `registerForTournamentAction` from `src/actions/admin.ts`.
+
+### 6. Test Suite Expansion & Verification
+- Added 4 new test suites (37 new tests; total 19 suites, 152/152 tests passing):
+  - `tests/unit/fee-status.test.ts` (8 tests): Computed status (`PAID`, `OVERDUE`, `DUE`, `UPCOMING`), prioritization sorting, integer paise totals, next payable fee identification, compliance flag.
+  - `tests/unit/tournament-eligibility.test.ts` (10 tests): Future date windows, deadline expiration, player capacity limits, batch level eligibility, age limit enforcement.
+  - `tests/unit/student-state.test.ts` (8 tests): Status transition state machine (`ACTIVE`, `INACTIVE`, `SUSPENDED`, `GRADUATED`), re-enrollment, invalid transition rejections, Zod enum safety.
+  - `tests/unit/date.test.ts` (11 tests): `formatDate` in `Asia/Kolkata`, UTC midnight boundary shifts, `compareKolkataDates`, and `isFutureDate`.
+- Full verification gates passed: `npm test` (152 passed), `npm run lint` (0 errors), `npx tsc --noEmit` (0 errors), and `npm run build` (successful compilation and route bundling).
+
+
 
 

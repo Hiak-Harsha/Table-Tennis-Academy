@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import RegisterTournamentButton from '@/components/RegisterTournamentButton'
 import { formatINR } from '@/lib/currency'
+import { formatDate } from '@/lib/date'
 
 export default function TournamentHubClient({ 
   tournaments, 
@@ -105,7 +106,7 @@ export default function TournamentHubClient({
                 <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(0,0,0,0.2)', padding: '1.25rem', borderRadius: 'var(--radius-lg)', marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: '0.9rem' }}>
                     <span style={{ fontSize: '1.2rem' }}>📅</span>
-                    <span style={{ fontWeight: 600 }}>{new Date(t.date).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                    <span style={{ fontWeight: 600 }}>{formatDate(t.date, 'long')}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', fontSize: '0.9rem' }}>
                     <span style={{ fontSize: '1.2rem' }}>📍</span>
