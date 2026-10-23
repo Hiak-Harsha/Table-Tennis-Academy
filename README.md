@@ -168,6 +168,9 @@ npx playwright test
    curl -i https://your-domain.com/api/health
    ```
 
+### Vercel Serverless Production
+For detailed instructions on deploying to Vercel, configuring PostgreSQL environment variables, and setting up automated preview environments, consult [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).
+
 ### Automated Database Backups
 A production backup script with automated 30-day retention pruning is provided in `scripts/db-backup.sh`:
 ```bash
