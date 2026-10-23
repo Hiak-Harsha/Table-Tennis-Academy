@@ -309,6 +309,18 @@ export default function RegisterWizard() {
               />
             </div>
 
+            <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.75rem', lineHeight: '1.4', margin: '0.25rem 0' }}>
+              By continuing, you agree to the{' '}
+              <Link href="/terms" target="_blank" style={{ color: 'hsl(var(--accent-blue))', textDecoration: 'underline' }}>
+                Terms & Rules
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" target="_blank" style={{ color: 'hsl(var(--accent-blue))', textDecoration: 'underline' }}>
+                Privacy Policy
+              </Link>
+              . For athletes under 18, parental/guardian consent is confirmed.
+            </p>
+
             <LoadingButton
               variant="primary"
               loadingText="SENDING CODE..."

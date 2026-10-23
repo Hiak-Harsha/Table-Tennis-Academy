@@ -7,6 +7,10 @@ import { SESSION_COOKIE_NAME, verifySessionToken } from './lib/session'
  * Cryptographic signature verification and route protection.
  */
 export default async function proxy(request: NextRequest) {
+  const requestId = request.headers.get('x-request-id') || crypto.randomUUID()
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-request-id', requestId)
+
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value
 
   const isStudentRoute = request.nextUrl.pathname.startsWith('/student')
@@ -14,7 +18,9 @@ export default async function proxy(request: NextRequest) {
 
   // Unauthenticated request to protected routes
   if (!sessionCookie && (isStudentRoute || isAdminRoute)) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const response = NextResponse.redirect(new URL('/login', request.url))
+    response.headers.set('x-request-id', requestId)
+    return response
   }
 
   if (sessionCookie) {
@@ -24,20 +30,31 @@ export default async function proxy(request: NextRequest) {
     if (!payload) {
       const response = NextResponse.redirect(new URL('/login', request.url))
       response.cookies.delete(SESSION_COOKIE_NAME)
+      response.headers.set('x-request-id', requestId)
       return response
     }
 
     // Role-based route guardrails
     if (isAdminRoute && payload.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/student', request.url))
+      const response = NextResponse.redirect(new URL('/student', request.url))
+      response.headers.set('x-request-id', requestId)
+      return response
     }
 
     if (isStudentRoute && payload.role !== 'STUDENT') {
-      return NextResponse.redirect(new URL('/admin', request.url))
+      const response = NextResponse.redirect(new URL('/admin', request.url))
+      response.headers.set('x-request-id', requestId)
+      return response
     }
   }
 
-  return NextResponse.next()
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
+  response.headers.set('x-request-id', requestId)
+  return response
 }
 
 export const config = {

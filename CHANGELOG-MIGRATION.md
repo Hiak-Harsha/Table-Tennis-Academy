@@ -383,3 +383,39 @@ All breaking changes, schema modifications, security updates, and URL/env variab
 - **TypeScript**: `npx tsc --noEmit` passed with 0 errors.
 - **Next.js Production Build**: `prisma generate && next build` compiled all 17 routes in 21s without warnings or errors.
 
+---
+
+## Phase 9: Production Readiness, Security Hardening, Observability & Compliance (Completed)
+
+### 1. HTTP Security Headers & Origin Controls (`next.config.ts`, `src/proxy.ts`)
+- **Content Security Policy (CSP)**: Added restrictive directives (`default-src 'self'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, with whitelist for Google Fonts and payment QR generators).
+- **HSTS Preload**: Enforced `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`.
+- **Frame & Sniffing Protection**: Added `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
+- **Server Action Origins**: Explicitly restricted allowed origins in Next.js config (`experimental.serverActions.allowedOrigins: ['localhost:3000', '127.0.0.1:3000']`).
+- **Fingerprint Defense**: Disabled `poweredByHeader` to prevent `X-Powered-By: Next.js` header leakage.
+- **Distributed Tracing**: Attached automatic `x-request-id` UUID correlation headers across all incoming and proxied requests in `src/proxy.ts`.
+
+### 2. Observability & Health Monitoring (`/api/health`, `src/lib/logger.ts`, `src/lib/sentry.ts`)
+- **Uptime & Health Endpoint (`src/app/api/health/route.ts`)**: Built dynamic healthcheck route executing `SELECT 1` database ping with millisecond latency tracking, process uptime, memory RSS/heap metrics, and 503 response on database degradation.
+- **Production Structured Logger (`src/lib/logger.ts`)**: Created high-performance structured logger with single-line JSON formatting for cloud log forwarders in production and human-readable format in dev. Includes recursive automated redaction for sensitive fields (`password`, `token`, `secret`, `otp`, `cookie`).
+- **Sentry Integration Facade (`src/lib/sentry.ts`)**: Implemented pluggable exception tracking with user and action context tagging, gracefully falling back to structured logger when `SENTRY_DSN` is not provided.
+
+### 3. Legal & Regulatory Compliance Pages
+- **Privacy Policy (`src/app/privacy/page.tsx`)**: Full privacy notice compliant with India's Digital Personal Data Protection (DPDP) Act and IT Act 2000, specifically covering minor student data handling (ages 5+), parental consent verification, and athlete data deletion rights (`dpo@tta-academy.com`).
+- **Terms of Service & Rules (`src/app/terms/page.tsx`)**: Academy code of conduct, court shoe rules, monthly fee billing schedules, overdue consequence timelines, and sports activity liability waivers.
+- **Refund & Cancellation Policy (`src/app/refunds/page.tsx`)**: Transparent tournament cancellation cutoff windows (48 hours), training fee pro-rata terms, and 5–7 day banking settlement turnaround times.
+- **Form Disclaimers**: Added explicit parental consent disclaimers and legal terms links on player registration (`register/page.tsx`) and payment modals (`PaymentGateway.tsx`).
+
+### 4. Database Resilience & Disaster Recovery Runbooks
+- **Automated Backup Script (`scripts/db-backup.sh`)**: Created daily PostgreSQL backup script with gzip -9 compression, integrity verification (`gzip -t`), and 30-day archive pruning.
+- **Rollback Runbook (`ROLLBACK.md`)**: Documented multi-tier rollback procedures for cloud deployments, forward/reverse Prisma migrations, and point-in-time database restoration.
+- **Contribution Guidelines (`CONTRIBUTING.md`)**: Established pre-commit quality gates, branching standards, and security mandates.
+- **Production Documentation (`README.md`)**: Completely rewritten from scratch, purging legacy SQLite references and replacing with detailed Next.js 16 architecture, environment variables, provisioning steps, and testing commands.
+
+### 5. Verification Gates
+- **Unit & Integration Tests**: 24 test files, **170/170 tests passed** (duration ~2.6s).
+- **ESLint**: 0 errors.
+- **TypeScript**: `npx tsc --noEmit` passed with 0 errors.
+- **Next.js Production Build**: `prisma generate && next build` compiled and optimized all 21 routes in 26.4s with 0 errors.
+
+

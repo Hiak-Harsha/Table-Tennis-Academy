@@ -170,14 +170,16 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer style={{ background: '#050505', padding: '1.5rem 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ color: '#334155', fontSize: '0.875rem', fontWeight: 600 }}>© 2025 TTA ELITE ACADEMY. Built for Champions.</div>
-          <div style={{ display: 'flex', gap: '2rem' }}>
-            <Link href="/register" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600 }}>Enroll</Link>
-            <Link href="/login" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600 }}>Student Login</Link>
-            <Link href="/login" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600 }}>Admin</Link>
-          </div>
+      <footer style={{ background: '#050505', padding: '2rem 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
+          <div style={{ color: '#64748b', fontSize: '0.85rem' }}>© 2026 Table Tennis Academy. All rights reserved.</div>
+          <nav aria-label="Legal & Information" style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <Link href="/privacy" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.85rem' }}>Privacy Policy</Link>
+            <Link href="/terms" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.85rem' }}>Terms & Rules</Link>
+            <Link href="/refunds" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.85rem' }}>Refund Policy</Link>
+            <Link href="/api/health" target="_blank" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.85rem' }}>System Status</Link>
+            <Link href="/login" style={{ color: 'var(--ball-orange)', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600 }}>Sign In →</Link>
+          </nav>
         </div>
       </footer>
     </main>

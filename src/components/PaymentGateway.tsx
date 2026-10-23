@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { formatINR } from '@/lib/currency'
 import { createPaymentOrderAction, checkPaymentStatusAction } from '@/actions/payments'
@@ -475,9 +476,21 @@ export default function PaymentGateway({
             color: 'hsl(var(--text-muted))',
             fontWeight: 700,
             letterSpacing: '0.05em',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.35rem',
           }}
         >
-          🔒 SERVER-VERIFIED WEBHOOK CONFIRMATION • NPCI UPI INTEGRATION
+          <div>🔒 SERVER-VERIFIED WEBHOOK CONFIRMATION • NPCI UPI INTEGRATION</div>
+          <div>
+            <Link
+              href="/refunds"
+              target="_blank"
+              style={{ color: 'var(--ball-orange)', textDecoration: 'underline' }}
+            >
+              Refund & Cancellation Policy
+            </Link>
+          </div>
         </div>
       </div>
     </div>
