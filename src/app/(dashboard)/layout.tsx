@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import StudentSidebar from '@/components/StudentSidebar'
 import MobileHeader from '@/components/MobileHeader'
+import NotificationBell from '@/components/NotificationBell'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false)
@@ -26,12 +27,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           borderBottom: '1px solid var(--border-subtle)', 
           display: 'flex', 
           alignItems: 'center', 
+          justifyContent: 'space-between',
           padding: '0 2rem', 
           flexShrink: 0 
         }}>
           <div style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            TTA Elite · Athlete Portal · Isolated Personal Data
+            TTA Elite · Athlete Portal · Real-time Sync Active
           </div>
+          <NotificationBell />
         </header>
 
         <div className="main-content-viewport" style={{ 

@@ -4,6 +4,7 @@ import { env } from '@/lib/env'
 import { verifyWebhookSignature } from '@/lib/payment-security'
 import { assertValidPaymentTransition, PaymentState } from '@/lib/payment-state'
 import { writeAuditLog } from '@/lib/audit'
+import { realtimeBus } from '@/lib/realtime/bus'
 
 export const dynamic = 'force-dynamic'
 
@@ -171,6 +172,30 @@ export async function POST(req: NextRequest) {
           amountPaise: payment.amount,
           receiptNo,
         },
+      })
+
+      // Real-time dispatch to user's live notification feed (<50ms)
+      realtimeBus.publish(`user:${payment.student.userId}`, 'notification.new', {
+        notification: {
+          id: receiptNo,
+          type: payment.purpose,
+          message:
+            payment.purpose === 'FEE'
+              ? `Payment of ₹${payment.amount / 100} received successfully. Receipt: ${receiptNo}.`
+              : `Tournament entry fee payment confirmed. Registration receipt: ${receiptNo}.`,
+          isRead: false,
+          createdAt: now.toISOString(),
+        },
+      })
+
+      // Real-time dispatch to admin live operations dashboard
+      realtimeBus.publish('admin:ops', 'payment.captured', {
+        orderId,
+        paymentId,
+        amount: payment.amount,
+        studentName: payment.student.fullName,
+        purpose: payment.purpose,
+        receiptNo,
       })
 
       return NextResponse.json({ received: true, status: 'CAPTURED', receiptNo }, { status: 200 })

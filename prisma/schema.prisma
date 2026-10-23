@@ -169,6 +169,7 @@ model Broadcast {
 
 model ChatMessage {
   id          String   @id @default(uuid())
+  clientMsgId String?  @unique
   content     String?
   sender      Student? @relation("SentMessages", fields: [senderId], references: [id], onDelete: SetNull)
   senderId    String?
@@ -180,11 +181,24 @@ model ChatMessage {
   fileUrl     String?
   fileName    String?
   fileType    String?  // IMAGE, PDF, DOCUMENT
+  status      String   @default("SENT") // SENT, DELIVERED, READ
   createdAt   DateTime @default(now())
 
   @@index([category, batchType])
   @@index([recipientId])
   @@index([createdAt])
+  @@index([clientMsgId])
+}
+
+model ChatReadReceipt {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
 }
 
 model Session {

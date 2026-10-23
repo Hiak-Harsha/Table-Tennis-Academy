@@ -6,6 +6,8 @@ import { requireAny } from '@/lib/auth-guard'
 import { ChatMessageSchema } from '@/lib/validations'
 import { validateUploadedFile } from '@/lib/file-security'
 import { saveUploadedFile } from '@/lib/storage'
+import { realtimeBus } from '@/lib/realtime/bus'
+import { getDmChannelName } from '@/lib/realtime/authz'
 import { z } from 'zod'
 
 export async function sendChatMessageAction(formData: FormData) {
@@ -19,6 +21,18 @@ export async function sendChatMessageAction(formData: FormData) {
       batchType: formData.get('batchType') || undefined,
       recipientId: formData.get('recipientId') || undefined,
     })
+
+    const clientMsgId = (formData.get('clientMsgId') as string) || undefined
+
+    // Idempotent deduplication using client-generated message ID
+    if (clientMsgId) {
+      const existing = await prisma.chatMessage.findUnique({
+        where: { clientMsgId },
+      })
+      if (existing) {
+        return { success: true, message: existing }
+      }
+    }
 
     const file = formData.get('file') as File | null
     let fileUrl: string | null = null
@@ -63,8 +77,9 @@ export async function sendChatMessageAction(formData: FormData) {
       }
     }
 
-    await prisma.chatMessage.create({
+    const created = await prisma.chatMessage.create({
       data: {
+        clientMsgId,
         content: validated.content,
         category: validated.category,
         batchType: validated.batchType,
@@ -75,12 +90,41 @@ export async function sendChatMessageAction(formData: FormData) {
         fileUrl,
         fileName,
         fileType,
+        status: 'SENT',
+      },
+    })
+
+    // Instant Real-Time Event Dispatching (<50ms)
+    let channel = 'global'
+    if (validated.category === 'BATCH' && validated.batchType) {
+      channel = `batch:${validated.batchType}`
+    } else if (validated.category === 'PRIVATE' && validated.recipientId) {
+      const myParticipantId = senderId || 'ADMIN'
+      channel = getDmChannelName(myParticipantId, validated.recipientId)
+    }
+
+    realtimeBus.publish(channel, 'chat.message', {
+      message: {
+        id: created.id,
+        clientMsgId: created.clientMsgId,
+        content: created.content,
+        senderName: created.senderName,
+        senderId: created.senderId,
+        isAdmin: created.isAdmin,
+        category: created.category,
+        batchType: created.batchType,
+        recipientId: created.recipientId,
+        fileUrl: created.fileUrl,
+        fileName: created.fileName,
+        fileType: created.fileType,
+        status: created.status,
+        createdAt: created.createdAt.toISOString(),
       },
     })
 
     revalidatePath('/student/connect')
     revalidatePath('/admin/chat')
-    return { success: true }
+    return { success: true, message: created }
   } catch (error: any) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
     return { error: error.message || 'Transmission failed.' }
@@ -91,11 +135,13 @@ export async function getChatMessagesAction(params: {
   category: string
   batchType?: string
   recipientId?: string
+  cursor?: string
+  limit?: number
 }) {
   try {
     const session = await requireAny()
 
-    let where: any = { category: params.category }
+    const where: any = { category: params.category }
 
     if (params.category === 'BATCH') {
       where.batchType = params.batchType
@@ -110,28 +156,30 @@ export async function getChatMessagesAction(params: {
 
       if (!currentId) return []
 
-      // Filter for messages where (sender=Me AND recipient=Them) OR (sender=Them AND recipient=Me)
-      where = {
-        category: 'PRIVATE',
-        OR: [
-          { senderId: currentId, recipientId: params.recipientId },
-          { senderId: params.recipientId, recipientId: currentId },
-        ],
-      }
-      // If Admin is involved, use isAdmin flag instead of senderId for Me check
+      // Filter for messages between these two participants
       if (session.role === 'ADMIN') {
         where.OR = [
           { isAdmin: true, recipientId: params.recipientId },
           { senderId: params.recipientId, recipientId: 'ADMIN' },
         ]
+      } else {
+        where.OR = [
+          { senderId: currentId, recipientId: params.recipientId },
+          { senderId: params.recipientId, recipientId: currentId },
+        ]
       }
     }
 
-    return await prisma.chatMessage.findMany({
+    const limit = Math.min(params.limit || 50, 100)
+
+    const messages = await prisma.chatMessage.findMany({
       where,
       orderBy: { createdAt: 'asc' },
-      take: 100,
+      take: limit,
+      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
     })
+
+    return messages
   } catch {
     return []
   }
@@ -140,7 +188,6 @@ export async function getChatMessagesAction(params: {
 export async function getChatRecipientsAction() {
   try {
     const session = await requireAny()
-    // Admin gets all students, Student gets Admin + all other students
     const students = await prisma.student.findMany({
       select: { id: true, fullName: true, studentId: true, batchType: true },
     })
@@ -159,5 +206,58 @@ export async function getChatRecipientsAction() {
     return recipients
   } catch {
     return []
+  }
+}
+
+/**
+ * Mark messages as read and broadcast read receipts
+ */
+export async function markMessagesReadAction(params: { messageIds: string[]; channel: string }) {
+  try {
+    const session = await requireAny()
+    if (!params.messageIds || params.messageIds.length === 0) return { success: true }
+
+    await prisma.$transaction([
+      prisma.chatMessage.updateMany({
+        where: {
+          id: { in: params.messageIds },
+          status: 'SENT',
+        },
+        data: { status: 'READ' },
+      }),
+      prisma.chatReadReceipt.createMany({
+        data: params.messageIds.map((msgId) => ({
+          messageId: msgId,
+          userId: session.id,
+        })),
+        skipDuplicates: true,
+      }),
+    ])
+
+    realtimeBus.publish(params.channel, 'chat.read', {
+      messageIds: params.messageIds,
+      readerUserId: session.id,
+    })
+
+    return { success: true }
+  } catch (err) {
+    console.warn('[CHAT] Failed to mark read:', err)
+    return { success: false }
+  }
+}
+
+/**
+ * Broadcast temporary typing indicator
+ */
+export async function sendTypingIndicatorAction(params: { channel: string }) {
+  try {
+    const session = await requireAny()
+    realtimeBus.publish(params.channel, 'chat.typing', {
+      userId: session.id,
+      timestamp: Date.now(),
+    })
+    return { success: true }
+  } catch {
+    return { success: false }
   }
 }
