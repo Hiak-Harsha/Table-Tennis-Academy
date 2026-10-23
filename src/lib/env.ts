@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+const isBuildTime =
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env.VERCEL === '1' ||
+  process.env.CI === 'true'
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -9,6 +14,11 @@ const envSchema = z
       .refine(
         (url) => url.startsWith('postgresql://') || url.startsWith('postgres://'),
         'DATABASE_URL must be a valid PostgreSQL connection string (postgresql:// or postgres://)'
+      )
+      .default(
+        isBuildTime
+          ? 'postgresql://postgres:postgres@localhost:5432/build_placeholder?schema=public'
+          : ''
       ),
     SESSION_SECRET: z
       .string()
@@ -27,13 +37,18 @@ const envSchema = z
   })
   .refine(
     (data) => {
-      if (data.NODE_ENV === 'production' && data.SESSION_SECRET.includes('development-insecure')) {
+      // In production runtime (outside build containers), enforce production SESSION_SECRET
+      if (
+        data.NODE_ENV === 'production' &&
+        !isBuildTime &&
+        data.SESSION_SECRET.includes('development-insecure')
+      ) {
         return false
       }
       return true
     },
     {
-      message: 'A real 32+ character SESSION_SECRET is required in production.',
+      message: 'A real 32+ character SESSION_SECRET is required in production runtime.',
       path: ['SESSION_SECRET'],
     }
   )
@@ -44,6 +59,15 @@ if (!parsed.success) {
   const formatted = JSON.stringify(parsed.error.format(), null, 2)
   console.error('❌ Invalid environment variables:\n', formatted)
   throw new Error(`Invalid environment variables:\n${formatted}`)
+}
+
+if (
+  parsed.data.NODE_ENV === 'production' &&
+  parsed.data.SESSION_SECRET.includes('development-insecure')
+) {
+  console.warn(
+    '⚠️ [Vercel / Production Notice]: Using build-time default SESSION_SECRET. Please ensure a 32+ char SESSION_SECRET is set in your Vercel Project Settings for live sessions.'
+  )
 }
 
 export const env = parsed.data

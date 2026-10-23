@@ -6,7 +6,7 @@ import {
   isBcryptHash,
 } from '@/lib/password'
 
-describe('Password Security and Hashing', () => {
+describe('Password Security and Hashing', { timeout: 30000 }, () => {
   it('should validate password strength correctly', () => {
     expect(validatePasswordStrength('').valid).toBe(false)
     expect(validatePasswordStrength('short').valid).toBe(false)

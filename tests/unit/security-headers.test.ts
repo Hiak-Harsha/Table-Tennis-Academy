@@ -15,11 +15,12 @@ describe('Next.js Security Headers & Hardening Config', () => {
     const headerConfigs = await nextConfig.headers()
     expect(Array.isArray(headerConfigs)).toBe(true)
 
-    const globalHeaders = headerConfigs.find((cfg) => cfg.source === '/:path*')
+    const globalHeaders = headerConfigs.find((cfg: { source: string }) => cfg.source === '/:path*')
     expect(globalHeaders).toBeDefined()
 
     const headersMap = new Map<string, string>()
-    for (const h of globalHeaders!.headers) {
+    const headersList = (globalHeaders as { headers: Array<{ key: string; value: string }> }).headers
+    for (const h of headersList) {
       headersMap.set(h.key.toLowerCase(), h.value)
     }
 
@@ -47,5 +48,6 @@ describe('Next.js Security Headers & Hardening Config', () => {
     const allowed = nextConfig.experimental?.serverActions?.allowedOrigins
     expect(Array.isArray(allowed)).toBe(true)
     expect(allowed).toContain('localhost:3000')
+    expect(allowed).toContain('*.vercel.app')
   })
 })

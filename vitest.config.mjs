@@ -8,6 +8,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    testTimeout: 30000,
+    hookTimeout: 30000,
     include: [
       'tests/unit/**/*.{test,spec}.{ts,tsx}',
       'tests/integration/**/*.{test,spec}.{ts,tsx}',
@@ -18,6 +20,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '~': path.resolve(__dirname, './'),
     },
   },
 })

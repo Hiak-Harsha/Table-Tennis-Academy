@@ -31,16 +31,23 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://images.unsplash.com https://api.qrserver.com",
-      "connect-src 'self'",
+      "connect-src 'self' https://*.vercel-insights.com https://*.vercel-analytics.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
     ].join('; '),
   },
+]
+
+const vercelOrigins = [
+  'localhost:3000',
+  '127.0.0.1:3000',
+  '*.vercel.app',
+  ...(process.env.VERCEL_URL ? [process.env.VERCEL_URL] : []),
 ]
 
 const nextConfig: NextConfig = {
@@ -60,7 +67,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', '127.0.0.1:3000'],
+      allowedOrigins: vercelOrigins,
     },
   },
   async headers() {
