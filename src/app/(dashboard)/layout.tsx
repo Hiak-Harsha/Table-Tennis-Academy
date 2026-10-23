@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import StudentSidebar from '@/components/StudentSidebar'
+import StudentBottomNav from '@/components/StudentBottomNav'
 import MobileHeader from '@/components/MobileHeader'
 import NotificationBell from '@/components/NotificationBell'
 
@@ -9,7 +10,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'hsl(var(--bg-primary))' }}>
+    <div style={{ display: 'flex', minHeight: '100dvh', background: 'hsl(var(--bg-primary))' }}>
+      <a href="#main-content" className="skip-to-content">Skip to content</a>
       <MobileHeader portalName="TTA Player Portal" onMenuToggle={() => setSidebarOpen(true)} />
       
       <StudentSidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -37,16 +39,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <NotificationBell />
         </header>
 
-        <div className="main-content-viewport" style={{ 
+        <div className="main-content-viewport has-bottom-nav" style={{ 
           padding: '2rem 1.5rem', 
           flex: 1, 
           overflowY: 'auto'
         }}>
-          <div className="academy-container">
+          <div id="main-content" className="academy-container" tabIndex={-1}>
             {children}
           </div>
         </div>
       </main>
+
+      <StudentBottomNav />
     </div>
   )
 }

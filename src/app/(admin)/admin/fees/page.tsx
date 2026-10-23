@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
 import { FeeStatusControl, AddFeeModal } from '@/components/FeeControls'
+import ExportFeesButton from '@/components/ExportFeesButton'
 import { formatINR } from '@/lib/currency'
 
 export const dynamic = 'force-dynamic'
@@ -12,14 +13,27 @@ export default async function AdminFeesPage() {
   const totalDue = fees.filter((f: any) => f.status !== 'PAID').reduce((s: number, f: any) => s + f.amount, 0)
   const overdueCount = fees.filter((f: any) => f.status === 'OVERDUE').length
 
+  const feeExportData = fees.map((f: any) => ({
+    dueDate: f.dueDate,
+    interval: f.interval || 'MONTHLY',
+    studentId: f.student.studentId,
+    fullName: f.student.fullName,
+    amount: f.amount,
+    status: f.status,
+    paymentDate: f.paymentDate,
+  }))
+
   return (
     <div className="animate-fade-in" style={{ padding: '0 0.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1 style={{ fontSize: '1.2rem' }}>Fee Ledger</h1>
           <p style={{ color: 'hsl(var(--text-secondary))', margin: 0, fontSize: '0.75rem' }}>Manage all student fee records.</p>
         </div>
-        <AddFeeModal students={students} />
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <ExportFeesButton fees={feeExportData} />
+          <AddFeeModal students={students} />
+        </div>
       </div>
 
       <div className="grid-3" style={{ marginBottom: '1.25rem' }}>
@@ -36,32 +50,34 @@ export default async function AdminFeesPage() {
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.78rem' }}>
-          <thead>
-            <tr style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid var(--border-subtle)' }}>
-              {['Due Date', 'Interval', 'Student ID', 'Name', 'Amount', 'Status', 'Paid On'].map(h => (
-                <th key={h} style={{ padding: '0.6rem 0.75rem', color: '#64748b', fontWeight: 700, fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {fees.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#475569' }}>No records. Click &quot;+ Add Fee Record&quot;.</td></tr>
-            ) : (fees as any[]).map(row => (
-              <tr key={row.id} className="roster-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                <td style={{ padding: '0.55rem 0.75rem', color: '#94a3b8', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                  {new Date(row.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </td>
-                <td style={{ padding: '0.55rem 0.75rem', color: '#64748b', fontWeight: 700, fontSize: '0.6rem' }}>{row.interval || 'MONTHLY'}</td>
-                <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700, color: '#60a5fa', fontFamily: 'monospace', fontSize: '0.75rem' }}>{row.student.studentId}</td>
-                <td style={{ padding: '0.55rem 0.75rem', fontWeight: 600, color: '#e2e8f0', fontSize: '0.8rem' }}>{row.student.fullName}</td>
-                <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700, fontSize: '0.85rem' }}>{formatINR(row.amount)}</td>
-                <td style={{ padding: '0.55rem 0.75rem' }}><FeeStatusControl feeId={row.id} status={row.status} /></td>
-                <td style={{ padding: '0.55rem 0.75rem', color: '#475569', fontSize: '0.7rem' }}>{row.paymentDate ? new Date(row.paymentDate).toLocaleDateString('en-IN') : '—'}</td>
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.78rem' }}>
+            <thead>
+              <tr style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid var(--border-subtle)' }}>
+                {['Due Date', 'Interval', 'Student ID', 'Name', 'Amount', 'Status', 'Paid On'].map(h => (
+                  <th key={h} style={{ padding: '0.6rem 0.75rem', color: '#64748b', fontWeight: 700, fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {fees.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#475569' }}>No records. Click &quot;+ Add Fee Record&quot;.</td></tr>
+              ) : (fees as any[]).map(row => (
+                <tr key={row.id} className="roster-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                  <td style={{ padding: '0.55rem 0.75rem', color: '#94a3b8', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                    {new Date(row.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </td>
+                  <td style={{ padding: '0.55rem 0.75rem', color: '#64748b', fontWeight: 700, fontSize: '0.6rem' }}>{row.interval || 'MONTHLY'}</td>
+                  <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700, color: '#60a5fa', fontFamily: 'monospace', fontSize: '0.75rem' }}>{row.student.studentId}</td>
+                  <td style={{ padding: '0.55rem 0.75rem', fontWeight: 600, color: '#e2e8f0', fontSize: '0.8rem' }}>{row.student.fullName}</td>
+                  <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700, fontSize: '0.85rem' }}>{formatINR(row.amount)}</td>
+                  <td style={{ padding: '0.55rem 0.75rem' }}><FeeStatusControl feeId={row.id} status={row.status} /></td>
+                  <td style={{ padding: '0.55rem 0.75rem', color: '#475569', fontSize: '0.7rem' }}>{row.paymentDate ? new Date(row.paymentDate).toLocaleDateString('en-IN') : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )

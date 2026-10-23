@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { formatINR } from '@/lib/currency'
 import { createPaymentOrderAction, checkPaymentStatusAction } from '@/actions/payments'
@@ -87,6 +88,15 @@ export default function PaymentGateway({
     }, 1000)
     return () => clearInterval(timer)
   }, [])
+
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onCancel])
 
   // Authoritative server status polling: client NEVER sets status directly
   const checkStatus = useCallback(async () => {
@@ -182,6 +192,9 @@ export default function PaymentGateway({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="payment-gateway-title"
       style={{
         position: 'fixed',
         inset: 0,
@@ -218,7 +231,7 @@ export default function PaymentGateway({
           }}
         >
           <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff', margin: 0 }}>
+            <h3 id="payment-gateway-title" style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff', margin: 0 }}>
               TTA Payment Gateway
             </h3>
             <p style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', margin: '0.2rem 0 0 0' }}>
@@ -373,9 +386,12 @@ export default function PaymentGateway({
                     boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
                   }}
                 >
-                  <img
+                  <Image
+                    unoptimized
                     src={qrImageUrl}
                     alt="Authoritative UPI QR Code"
+                    width={180}
+                    height={180}
                     style={{ width: '180px', height: '180px', display: 'block' }}
                   />
                 </div>

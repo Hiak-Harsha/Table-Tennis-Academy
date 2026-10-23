@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import {
   sendChatMessageAction,
   getChatMessagesAction,
@@ -387,10 +388,13 @@ export default function BatchChat({
                   {m.fileUrl && (
                     <div style={{ marginTop: m.content ? '0.5rem' : 0 }}>
                       {m.fileType === 'IMAGE' ? (
-                        <img
+                        <Image
+                          unoptimized
                           src={m.fileUrl}
-                          alt=""
-                          style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', display: 'block' }}
+                          alt="Chat image attachment"
+                          width={320}
+                          height={200}
+                          style={{ maxWidth: '100%', maxHeight: '200px', height: 'auto', borderRadius: '8px', display: 'block' }}
                         />
                       ) : (
                         <a

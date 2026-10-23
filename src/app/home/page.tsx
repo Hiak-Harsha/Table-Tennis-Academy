@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function Home() {
   return (
@@ -36,7 +37,14 @@ export default function Home() {
       {/* Hero Section */}
       <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', paddingTop: '68px' }}>
         <div className="img-overlay" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1 }}>
-          <img src="/images/hero.png" alt="Elite Table Tennis" className="img-contain" />
+          <Image
+            src="/images/hero.png"
+            alt="Elite Table Tennis Arena"
+            fill
+            priority
+            sizes="100vw"
+            style={{ objectFit: 'cover' }}
+          />
         </div>
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ maxWidth: '750px' }}>
@@ -78,8 +86,14 @@ export default function Home() {
       <section id="about" style={{ background: '#0d0d0d' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '600px' }}>
           <div style={{ position: 'relative', overflow: 'hidden' }}>
-            <img src="/images/academy.png" alt="Facility" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(to left, #0d0d0d 0%, transparent 30%)' }}></div>
+            <Image
+              src="/images/academy.png"
+              alt="Academy Facility Arena"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              style={{ objectFit: 'cover' }}
+            />
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(to left, #0d0d0d 0%, transparent 30%)', zIndex: 1 }}></div>
           </div>
           <div style={{ padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <span style={{ color: 'var(--accent-red)', fontWeight: 700, letterSpacing: '3px', fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '1rem', display: 'block' }}>Our Facility</span>

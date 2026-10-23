@@ -19,6 +19,15 @@ export default function CreateTournamentModal() {
     }
   }, [state, showToast])
 
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
   const inputStyle = {
     width: '100%',
     padding: '0.8rem 1rem',
@@ -49,6 +58,9 @@ export default function CreateTournamentModal() {
 
       {isOpen && (
         <div 
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tournament-modal-title"
           onClick={e => e.target === e.currentTarget && setIsOpen(false)}
           style={{ 
             position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
@@ -59,8 +71,8 @@ export default function CreateTournamentModal() {
           <div className="card glass animate-fade-in" style={{ width: '100%', maxWidth: '580px', padding: '2.5rem', border: '1px solid var(--border-medium)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.75rem', marginBottom: '0.5rem', fontWeight: 900 }}>Create Tournament</h2>
-                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.9rem', margin: 0 }}>This will be published immediately to all athlete dashboards.</p>
+                <h2 id="tournament-modal-title" style={{ fontSize: '1.75rem', marginBottom: '0.5rem', fontWeight: 900 }}>Create Tournament</h2>
+                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.9rem', margin: 0 }}>This will be published immediately to all player dashboards.</p>
               </div>
               <button 
                 onClick={() => setIsOpen(false)} 

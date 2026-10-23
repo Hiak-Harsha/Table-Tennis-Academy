@@ -11,7 +11,8 @@ export default function IntroAnimation() {
   useEffect(() => {
     // Only show the intro once per browser session
     const seen = sessionStorage.getItem('tta_intro_seen')
-    if (seen) {
+    const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (seen || prefersReduced) {
       router.replace('/home')
       return
     }
@@ -27,6 +28,11 @@ export default function IntroAnimation() {
 
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
   }, [router])
+
+  const handleSkip = () => {
+    setPhase('done')
+    router.replace('/home')
+  }
 
   if (!show || phase === 'done') return null
 
@@ -46,6 +52,28 @@ export default function IntroAnimation() {
         overflow: 'hidden'
       }}
     >
+      <button
+        onClick={handleSkip}
+        aria-label="Skip introductory animation"
+        style={{
+          position: 'absolute',
+          top: '1.5rem',
+          right: '1.5rem',
+          background: 'rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.2)',
+          color: '#fff',
+          padding: '0.5rem 1rem',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          zIndex: 10,
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        Skip Intro →
+      </button>
+
       {/* Pulsing red glow */}
       <div style={{
         position: 'absolute',

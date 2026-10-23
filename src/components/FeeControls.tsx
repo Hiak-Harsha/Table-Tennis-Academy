@@ -62,6 +62,15 @@ export function AddFeeModal({ students }: { students: { id: string; studentId: s
     if (state?.success) setOpen(false)
   }, [state])
 
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open])
+
   const inputStyle = {
     width: '100%',
     padding: '0.7rem 0.875rem',
@@ -96,12 +105,15 @@ export function AddFeeModal({ students }: { students: { id: string; studentId: s
 
       {open && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-fee-title"
           onClick={e => e.target === e.currentTarget && setOpen(false)}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)', padding: '1rem' }}
         >
           <div style={{ width: '100%', maxWidth: '480px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.7)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              <h3 style={{ fontSize: '1.3rem', color: '#f1f5f9' }}>Add Fee Record</h3>
+              <h3 id="add-fee-title" style={{ fontSize: '1.3rem', color: '#f1f5f9' }}>Add Fee Record</h3>
               <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
             </div>
 

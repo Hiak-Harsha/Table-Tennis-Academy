@@ -32,7 +32,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={contextValue}>
       {children}
-      <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <div 
+        role="region"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label="Notification alerts"
+        style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+      >
         {toasts.map(t => (
           <div key={t.id} className="glass animate-fade-in" style={{ 
             padding: '1rem 1.5rem', borderRadius: '12px', color: '#fff', fontSize: '0.9rem', fontWeight: 600,

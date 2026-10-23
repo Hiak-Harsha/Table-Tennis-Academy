@@ -17,6 +17,7 @@ export default function RegisterWizard() {
     batchType: 'BEGINNER',
     password: '',
   })
+  const [showPassword, setShowPassword] = useState(false)
   const [inputOtp, setInputOtp] = useState('')
   const [cooldown, setCooldown] = useState(0)
 
@@ -286,13 +287,23 @@ export default function RegisterWizard() {
             </div>
 
             <div>
-              <label style={labelStyle}>Password (Minimum 8 Characters)</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <label style={labelStyle}>Password (Minimum 8 Characters)</label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontWeight: 600 }}
+                >
+                  {showPassword ? '👁 Hide' : '👁 Show'}
+                </button>
+              </div>
               <input
                 required
                 minLength={8}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 style={inputStyle}
               />
@@ -369,21 +380,23 @@ export default function RegisterWizard() {
                 ← Edit Mobile
               </button>
 
-              <button
-                type="button"
-                disabled={cooldown > 0 || isPending}
-                onClick={handleResendOTP}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: cooldown > 0 ? 'hsl(var(--text-muted))' : 'hsl(var(--accent-blue))',
-                  cursor: cooldown > 0 ? 'default' : 'pointer',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                }}
-              >
-                {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
-              </button>
+              <div aria-live="polite" aria-atomic="true">
+                <button
+                  type="button"
+                  disabled={cooldown > 0 || isPending}
+                  onClick={handleResendOTP}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: cooldown > 0 ? 'hsl(var(--text-muted))' : 'hsl(var(--accent-blue))',
+                    cursor: cooldown > 0 ? 'default' : 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
+                </button>
+              </div>
             </div>
           </form>
         )}

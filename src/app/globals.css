@@ -483,3 +483,74 @@ select option {
   .btn { min-height: 44px; padding: 0.6rem 1rem; font-size: 0.9rem; }
   .auth-portal-card { padding: 1.5rem !important; }
 }
+
+/* ==========================================================================
+   Accessibility & Focus-Visible Standards (WCAG 2.1 AA)
+   ========================================================================== */
+
+:focus-visible {
+  outline: 2px solid var(--accent-blue) !important;
+  outline-offset: 2px !important;
+}
+
+.skip-to-content {
+  position: fixed;
+  top: -100px;
+  left: 1rem;
+  z-index: 10000;
+  padding: 0.75rem 1.25rem;
+  background: var(--ball-orange);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-3);
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+
+.skip-to-content:focus {
+  top: 1rem;
+}
+
+/* Responsive Table Wrapper */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+}
+
+.table-responsive table {
+  min-width: 620px;
+}
+
+/* Mobile Bottom Navigation */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(60px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgba(11, 14, 20, 0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--paddle-border-bright);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 900;
+}
+
+@media (min-width: 769px) {
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .has-bottom-nav {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+

@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma'
 import { getCurrentUser as getSession } from '@/lib/auth-guard'
 import { formatINR } from '@/lib/currency'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default async function StudentDashboard() {
   const session = await getSession()
@@ -41,8 +42,14 @@ export default async function StudentDashboard() {
         background: 'hsla(var(--bg-card), 0.5)', minHeight: '120px'
       }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-          <img src="/images/student_hero.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.2 }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, hsl(var(--bg-primary)) 20%, transparent 80%)' }} />
+          <Image
+            src="/images/student_hero.png"
+            alt="Player training dashboard banner"
+            fill
+            sizes="(max-width: 1200px) 100vw, 1100px"
+            style={{ objectFit: 'cover', opacity: 0.2 }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, hsl(var(--bg-primary)) 20%, transparent 80%)', zIndex: 1 }} />
         </div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'inline-block', padding: '0.25rem 0.7rem', background: 'hsl(var(--accent-red-glow))', border: '1px solid hsl(var(--accent-red))', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 700, color: 'hsl(var(--accent-red))', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>

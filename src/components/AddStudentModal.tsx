@@ -19,6 +19,15 @@ export default function AddStudentModal() {
     }
   }, [state, showToast])
 
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
   const inputStyle = {
     width: '100%',
     padding: '0.8rem 1rem',
@@ -44,11 +53,14 @@ export default function AddStudentModal() {
   return (
     <>
       <button className="btn btn-primary" onClick={() => setIsOpen(true)}>
-        <span>+</span> Register New Athlete
+        <span>+</span> Register New Player
       </button>
 
       {isOpen && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-player-title"
           onClick={e => e.target === e.currentTarget && setIsOpen(false)}
           style={{ 
             position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
@@ -59,8 +71,8 @@ export default function AddStudentModal() {
           <div className="card glass animate-fade-in" style={{ width: '100%', maxWidth: '580px', padding: '2.5rem', border: '1px solid var(--border-medium)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.75rem', marginBottom: '0.5rem', fontWeight: 900 }}>Register Athlete</h2>
-                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.9rem', margin: 0 }}>This creates an official record and student master account.</p>
+                <h2 id="add-player-title" style={{ fontSize: '1.75rem', marginBottom: '0.5rem', fontWeight: 900 }}>Register Player</h2>
+                <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.9rem', margin: 0 }}>This creates an official record and student account.</p>
               </div>
               <button 
                 onClick={() => setIsOpen(false)} 

@@ -8,7 +8,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isSidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'hsl(var(--bg-primary))' }}>
+    <div style={{ display: 'flex', minHeight: '100dvh', background: 'hsl(var(--bg-primary))' }}>
+      <a href="#main-content" className="skip-to-content">Skip to content</a>
       <MobileHeader portalName="TTA Coach Desk" onMenuToggle={() => setSidebarOpen(true)} />
       
       <AdminSidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -39,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           flex: 1, 
           overflowY: 'auto'
         }}>
-          <div className="academy-container">
+          <div id="main-content" className="academy-container" tabIndex={-1}>
             {children}
           </div>
         </div>

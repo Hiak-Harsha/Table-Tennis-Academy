@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import AddStudentModal from '@/components/AddStudentModal'
 import Link from 'next/link'
+import { exportToCsv } from '@/lib/csv-export'
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   ACTIVE:    { label: 'Active',    color: '#10b981', bg: 'rgba(16,185,129,0.1)'  },
@@ -56,24 +57,37 @@ export default function StudentRosterClient({ students }: { students: Student[] 
     fontSize: '0.9rem',
   }
 
+  const handleExportCsv = () => {
+    const headers = ['Player ID', 'Full Name', 'Age', 'Batch', 'Coach', 'Status']
+    const rows = filtered.map(s => [
+      s.studentId,
+      s.fullName,
+      s.age,
+      s.batchType,
+      s.coachName || 'Unassigned',
+      s.enrollmentStatus,
+    ])
+    exportToCsv('academy_player_roster', headers, rows)
+  }
+
   return (
     <div className="animate-fade-in">
       {/* Stats Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         {stats.map(s => (
-          <div key={s.label} className="card glass" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div key={s.label} className="card glass" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{s.label}</span>
               <span style={{ fontSize: '1.2rem' }}>{s.icon}</span>
             </div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 900, color: s.color }}>{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1.5rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, position: 'relative', maxWidth: '400px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, position: 'relative', minWidth: '240px', maxWidth: '400px' }}>
           <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-muted))' }}>🔍</span>
           <input 
             type="text" 
@@ -84,7 +98,7 @@ export default function StudentRosterClient({ students }: { students: Student[] 
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <select value={filterBatch} onChange={e => setFilterBatch(e.target.value)} style={{ ...inputStyle, appearance: 'none', paddingRight: '2rem' }}>
              <option value="ALL">All Batches</option>
              <option value="BEGINNER">Foundational</option>
@@ -95,7 +109,7 @@ export default function StudentRosterClient({ students }: { students: Student[] 
           <div style={{ display: 'flex', background: 'hsl(var(--bg-card))', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
             {['grid', 'table'].map(v => (
               <button key={v} onClick={() => setView(v as any)} style={{
-                padding: '0.75rem 1rem', background: view === v ? 'rgba(255,255,255,0.08)' : 'transparent',
+                padding: '0.65rem 0.9rem', background: view === v ? 'rgba(255,255,255,0.08)' : 'transparent',
                 border: 'none', color: view === v ? '#fff' : 'hsl(var(--text-muted))', cursor: 'pointer', transition: '0.2s'
               }}>
                 {v === 'grid' ? '⊞' : '☰'}
@@ -103,12 +117,29 @@ export default function StudentRosterClient({ students }: { students: Student[] 
             ))}
           </div>
 
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="btn btn-secondary"
+            style={{ padding: '0.65rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <span>📥</span> Export CSV
+          </button>
+
           <AddStudentModal />
         </div>
       </div>
 
       {/* Content */}
-      {view === 'grid' ? (
+      {filtered.length === 0 ? (
+        <div className="card glass animate-fade-in" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏓</div>
+          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No Players Found</h3>
+          <p style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.85rem', margin: 0 }}>
+            {search ? `No players matching "${search}". Try adjusting your search query or filters.` : 'No registered players found in this category.'}
+          </p>
+        </div>
+      ) : view === 'grid' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
            {filtered.map(s => {
              const st = statusConfig[s.enrollmentStatus] || statusConfig.ACTIVE
@@ -153,9 +184,10 @@ export default function StudentRosterClient({ students }: { students: Student[] 
         </div>
       ) : (
         <div className="card glass" style={{ padding: 0, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-subtle)' }}>
                 {['Player', 'Student ID', 'Batch', 'Coach', 'Status', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 900, color: 'hsl(var(--text-muted))', textTransform: 'uppercase' }}>{h}</th>
                 ))}
@@ -183,6 +215,7 @@ export default function StudentRosterClient({ students }: { students: Student[] 
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

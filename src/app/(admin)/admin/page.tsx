@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
+import Image from 'next/image'
 import { formatINR } from '@/lib/currency'
 
 export const dynamic = 'force-dynamic'
@@ -23,8 +24,14 @@ export default async function AdminDashboard() {
         background: 'hsla(var(--bg-card), 0.5)', minHeight: '110px'
       }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-          <img src="/images/admin_hero.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.2 }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, hsl(var(--bg-primary)) 15%, transparent 85%)' }} />
+          <Image
+            src="/images/admin_hero.png"
+            alt="Coach Operations Desk banner"
+            fill
+            sizes="(max-width: 1200px) 100vw, 1100px"
+            style={{ objectFit: 'cover', opacity: 0.2 }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, hsl(var(--bg-primary)) 15%, transparent 85%)', zIndex: 1 }} />
         </div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -83,10 +90,18 @@ export default async function AdminDashboard() {
                   color: s.batchType === 'ADVANCED' ? '#ef4444' : s.batchType === 'INTERMEDIATE' ? '#f59e0b' : '#3b82f6',
                   padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase'
                 }}>{s.batchType}</span>
-                <span style={{
-                  width: '7px', height: '7px', borderRadius: '50%',
-                  background: s.enrollmentStatus === 'ACTIVE' ? '#10b981' : '#64748b'
-                }} />
+                <span
+                  title={`Status: ${s.enrollmentStatus}`}
+                  aria-label={`Status: ${s.enrollmentStatus}`}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                    fontSize: '0.65rem', fontWeight: 700,
+                    color: s.enrollmentStatus === 'ACTIVE' ? '#10b981' : '#94a3b8'
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
+                  {s.enrollmentStatus}
+                </span>
               </div>
             ))}
           </div>

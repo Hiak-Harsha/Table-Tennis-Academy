@@ -48,6 +48,14 @@ export default function EditStudentForm({ student }: { student: StudentWithUser 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (enrollmentStatus === 'SUSPENDED' && student.enrollmentStatus !== 'SUSPENDED') {
+      const confirmed = window.confirm(
+        `Are you sure you want to SUSPEND ${fullName}? This will restrict their academy access and tournament entry.`
+      )
+      if (!confirmed) return
+    }
+
     const fd = new FormData()
     fd.set('id', student.id)
     fd.set('fullName', fullName)
@@ -99,7 +107,7 @@ export default function EditStudentForm({ student }: { student: StudentWithUser 
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
         <div>
-          <label style={labelStyle}>Athlete Full Name</label>
+          <label style={labelStyle}>Player Full Name</label>
           <input required value={fullName} onChange={(e) => setFullName(e.target.value)} style={inputStyle} />
         </div>
         <div>

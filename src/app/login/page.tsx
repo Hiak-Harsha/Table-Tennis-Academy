@@ -14,6 +14,7 @@ function LoginContent() {
   const { showToast } = useToast()
 
   const [state, action] = useActionState(unifiedLoginAction, null)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     if (state?.error) showToast(state.error, 'ERROR')
@@ -22,7 +23,7 @@ function LoginContent() {
   const inputStyle = {
     width: '100%', padding: '0.65rem 1rem', background: 'rgba(255,255,255,0.03)',
     border: '1px solid var(--border-subtle)', color: '#fff', borderRadius: '8px',
-    outline: 'none', fontSize: '0.9rem'
+    outline: 'none', fontSize: '1rem', minHeight: '44px'
   }
 
   return (
@@ -88,8 +89,18 @@ function LoginContent() {
             </div>
 
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '0.3rem' }}>Password</label>
-              <input name="password" type="password" placeholder="••••••••" required style={inputStyle} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Password</label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer', padding: '0.2rem 0.4rem', fontWeight: 600 }}
+                >
+                  {showPassword ? '👁 Hide' : '👁 Show'}
+                </button>
+              </div>
+              <input name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" required style={inputStyle} />
             </div>
 
             <LoadingButton

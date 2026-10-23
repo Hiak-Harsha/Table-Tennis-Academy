@@ -336,3 +336,50 @@ All breaking changes, schema modifications, security updates, and URL/env variab
 - **ESLint**: 0 errors.
 - **TypeScript**: `npx tsc --noEmit` passed with 0 errors.
 - **Next.js Production Build**: `prisma generate && next build` compiled and optimized all static and dynamic routes successfully.
+
+---
+
+## Phase 8: UX, Responsiveness, Mobile Touch Ergonomics & Accessibility (Completed)
+
+### 1. Mobile Bottom Navigation & 100dvh Layouts
+- **Student Bottom Nav (`src/components/StudentBottomNav.tsx`)**: Built a mobile-first 5-tab sticky bottom navigation bar (Dashboard, Fees, Tournaments, Squad Chat) displayed on viewports under 769px, supporting safe-area padding (`env(safe-area-inset-bottom)`) and proper screen reader hints (`aria-label="Mobile Navigation"`, `aria-current="page"`).
+- **Viewport Height Resilience**: Replaced standard `100vh` in root layouts (`(dashboard)/layout.tsx`, `(admin)/layout.tsx`) with dynamic `100dvh` to prevent layout clipping caused by mobile address bars.
+- **Skip Links (`.skip-to-content`)**: Added accessible skip navigation links in all major layout boundaries jumping keyboard focus directly to `<main id="main-content" tabIndex={-1}>`.
+
+### 2. WCAG 2.1 AA Accessibility & Keyboard Ergonomics
+- **Visible Focus Rings**: Added global `:focus-visible` styling (`outline: 2px solid var(--ball-orange); outline-offset: 2px`) for all focusable buttons, links, inputs, and selects.
+- **Modal Dialog Semantics & Escape Traps**: Upgraded all modal dialogs (`AddStudentModal`, `CreateTournamentModal`, `FeeControls`, `PaymentGateway`) with `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, and `keydown` event listeners for instantaneous `Escape` key dismissal.
+- **Live Announcements (`aria-live="polite"`)**: Configured accessible ARIA live regions for toast alert notifications (`ToastProvider.tsx`) and the OTP resend countdown timer (`register/page.tsx`).
+- **Motion Accessibility**: Updated `IntroAnimation.tsx` to detect `prefers-reduced-motion: reduce` for instant bypass, along with a dedicated "Skip Intro" keyboard-accessible button.
+- **Responsive Data Tables**: Wrapped all tabular rosters in `.table-responsive` containers with subtle horizontal scroll indicators, ensuring zero mobile overflow while retaining full column legibility.
+
+### 3. Touch Ergonomics & Form Usability
+- **Password Visibility Toggles**: Added show/hide password buttons to both `login/page.tsx` and `register/page.tsx` with accessible `aria-label` attributes.
+- **44px Minimum Touch Targets**: Standardized buttons, tab triggers, inputs, and modal close buttons to meet mobile touch-ergonomic targets (min 44×44px).
+- **Destructive Action Safety**: Integrated two-step confirmation prompts before executing player suspensions in `EditStudentForm.tsx`.
+- **Breadcrumb Navigation**: Added accessible `<nav aria-label="Breadcrumb">` on admin subpages (`admin/students/[id]/edit/page.tsx`).
+
+### 4. Next.js Image Optimization
+- Replaced all legacy unoptimized `<img>` tags with Next.js `<Image />` components across:
+  - `src/app/home/page.tsx`: Hero academy imagery with `priority` and responsive `sizes`.
+  - `src/app/(dashboard)/student/page.tsx`: Athlete profile avatars with fallback error handling.
+  - `src/app/(admin)/admin/page.tsx`: Coach desk avatars.
+  - `src/components/PaymentGateway.tsx`: UPI dynamic QR code display with optimized sizing and dimensions.
+  - `src/components/BatchChat.tsx`: Athlete messaging avatars.
+
+### 5. Loading Skeletons, Error Boundaries & 404 Not Found
+- **Loading Skeletons (`loading.tsx`)**: Created animated loading skeleton UI states for root (`src/app/loading.tsx`), student dashboard (`src/app/(dashboard)/student/loading.tsx`), and admin command desk (`src/app/(admin)/admin/loading.tsx`).
+- **Error Boundaries (`error.tsx`)**: Created client-side error fallback boundaries across all sections (`src/app/error.tsx`, `student/error.tsx`, `admin/error.tsx`) featuring actionable retry mechanisms (`reset()`).
+- **Custom 404 Page (`src/app/not-found.tsx`)**: Built a branded, accessible 404 Not Found page with quick navigation back to home or athlete dashboard.
+
+### 6. RFC 4180 CSV Export Utility
+- **Pure CSV Generator (`src/lib/csv-export.ts`)**: Created RFC 4180 compliant CSV export engine escaping fields containing commas, double quotes, and CRLF newlines.
+- **Export Triggers**: Added "Export CSV" buttons to Student Roster (`StudentRosterClient.tsx`) and Academy Fee Ledger (`admin/fees/page.tsx` via `ExportFeesButton.tsx`).
+- **Unit Test Coverage (`tests/unit/csv-export.test.ts`)**: Added 4 unit tests validating standard rows, special character quoting, quote escaping, and empty datasets.
+
+### 7. Verification Gates
+- **Unit Tests**: 20 test files, 156/156 tests passed.
+- **ESLint**: 0 errors.
+- **TypeScript**: `npx tsc --noEmit` passed with 0 errors.
+- **Next.js Production Build**: `prisma generate && next build` compiled all 17 routes in 21s without warnings or errors.
+
