@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma'
 import StudentRosterClient from '@/components/StudentRosterClient'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminStudents() {
   const students = await prisma.student.findMany({ orderBy: { fullName: 'asc' } })
 

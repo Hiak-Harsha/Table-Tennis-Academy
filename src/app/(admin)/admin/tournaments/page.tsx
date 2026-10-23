@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma'
 import CreateTournamentModal from '@/components/CreateTournamentModal'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminTournaments() {
   const tournaments = await prisma.tournament.findMany({
     orderBy: { date: 'asc' }, include: { participants: true }

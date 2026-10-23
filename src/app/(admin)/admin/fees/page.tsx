@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma'
 import { FeeStatusControl, AddFeeModal } from '@/components/FeeControls'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminFeesPage() {
   const fees = await prisma.academyFee.findMany({ include: { student: true }, orderBy: { dueDate: 'desc' } })
   const students = await prisma.student.findMany({ select: { id: true, studentId: true, fullName: true }, orderBy: { fullName: 'asc' } })

@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminDashboard() {
   const studentCount = await prisma.student.count()
   const totalRevenue = await prisma.academyFee.aggregate({ _sum: { amount: true }, where: { status: 'PAID' } })

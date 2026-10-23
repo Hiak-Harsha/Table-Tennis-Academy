@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && node -e \"if(process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres')){try{require('child_process').execSync('npx prisma db push --accept-data-loss',{stdio:'inherit'})}catch(e){console.warn('DB sync warning:',e.message)}}\" && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node seed.mjs"
   },
   "dependencies": {
     "next": "16.2.1",
