@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma'
-import { getSession } from '@/lib/auth-utils'
+import { getCurrentUser as getSession } from '@/lib/auth-guard'
 import Link from 'next/link'
 
 export default async function StudentDashboard() {

@@ -100,30 +100,6 @@ function LoginContent() {
               {isAdminMode ? 'AUTHORIZE' : 'SYNC WITH HUB'}
             </LoadingButton>
 
-            {/* Quick Demo Credentials Info */}
-            <div style={{
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px dashed var(--border-subtle)',
-              borderRadius: '8px',
-              padding: '0.6rem 0.75rem',
-              fontSize: '0.75rem',
-              marginTop: '0.25rem'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                <span style={{ fontWeight: 700, color: 'hsl(var(--text-muted))', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  🔑 {isAdminMode ? 'Overseer (Admin) Credentials' : 'Athlete (Student) Credentials'}
-                </span>
-              </div>
-              {isAdminMode ? (
-                <div style={{ color: '#94a3b8', lineHeight: 1.4, fontSize: '0.72rem' }}>
-                  ID: <span style={{ color: '#60a5fa', fontWeight: 700, fontFamily: 'monospace' }}>admin</span> &nbsp;|&nbsp; Key: <span style={{ color: '#60a5fa', fontWeight: 700, fontFamily: 'monospace' }}>adminadmin</span> (or <span style={{ color: '#60a5fa', fontWeight: 700, fontFamily: 'monospace' }}>admin</span>)
-                </div>
-              ) : (
-                <div style={{ color: '#94a3b8', lineHeight: 1.4, fontSize: '0.72rem' }}>
-                  Mobile: <span style={{ color: '#10b981', fontWeight: 700, fontFamily: 'monospace' }}>1234567890</span> &nbsp;|&nbsp; Key: <span style={{ color: '#10b981', fontWeight: 700, fontFamily: 'monospace' }}>password</span>
-                </div>
-              )}
-            </div>
           </form>
 
           <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.75rem' }}>

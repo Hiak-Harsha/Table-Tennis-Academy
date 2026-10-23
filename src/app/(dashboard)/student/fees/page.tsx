@@ -1,4 +1,4 @@
-import { getSession } from '@/lib/auth-utils'
+import { getCurrentUser as getSession } from '@/lib/auth-guard'
 import prisma from '@/lib/prisma'
 import { FeePaymentClient } from '@/components/FeePaymentClient'
 

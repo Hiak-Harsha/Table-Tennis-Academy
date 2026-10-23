@@ -2,7 +2,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { requireAny } from '@/lib/auth-utils'
+import { requireAny } from '@/lib/auth-guard'
 import fs from 'fs/promises'
 import path from 'path'
 import { z } from 'zod'

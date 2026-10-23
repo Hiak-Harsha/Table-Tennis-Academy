@@ -36,3 +36,40 @@ All breaking changes, schema modifications, security updates, and URL/env variab
 - **Prettier**: Added `.prettierrc` and `.prettierignore`.
 - **ESLint**: Added explicit directory scoping and node_modules exclusions to `eslint.config.mjs`.
 - **CI Pipeline**: Added `.github/workflows/ci.yml` running linting, typechecking, test suite, and production build on GitHub Actions.
+
+---
+
+## Phase 1: Authentication & Sessions Rebuilt (Completed)
+
+### 1. Cryptographic Session Engine & Database Tracking
+- **JWT Cryptography (`jose`)**: Replaced forged base64 cookie scheme with HS256 HMAC-SHA256 cryptographic signatures using `SESSION_SECRET`.
+- **Host-Prefixed Cookies**: Automated `__Host-tta_session` cookie prefix in production (`httpOnly`, `secure`, `sameSite: lax`, `path: '/'`).
+- **Database Session Persistence**: Added `Session` model to `prisma/schema.prisma` with `tokenHash` (SHA-256), `userId`, `expiresAt`, `revokedAt`, `userAgent`, and `ipAddress`.
+- **Session Revocation**: Full revocation support on logout or password change via `revokeSession` and `revokeAllUserSessions`.
+- **Active Student Verification**: `validateSession` authoritatively checks database on every request and immediately locks out non-`ACTIVE` student records (e.g. `SUSPENDED`, `INACTIVE`).
+
+### 2. Password Security & Transparent Upgrades
+- **Bcrypt Hashing (Cost 12)**: Implemented in `src/lib/password.ts` with minimum 8 characters requirement.
+- **Transparent Migration**: Passwords stored as legacy plaintext are verified and transparently migrated to bcrypt cost 12 upon successful authentication.
+- **Eliminated Backdoors**: Removed all hardcoded credentials (`9999999999 / admin123`, `8888888888 / demo123`, etc.) and auto-bootstrap logic from `src/actions/auth.ts`.
+- **CLI Admin Script**: Created `scripts/create-admin.ts` with `npm run admin:create` for secure out-of-band administrator provisioning.
+- **Removed Prototype Secrets**: Purged `NEXUS_SECRET` from `src/lib/auth-constants.ts` and overhauled `src/lib/auth-utils.ts` into a secure facade.
+
+### 3. Rate Limiting & Audit Logging
+- **Rate Limiting (`src/lib/rate-limit.ts`)**: Implemented sliding-window rate limiter per phone/IP (5 attempts per 15 minutes) protecting authentication routes against brute-force attacks.
+- **Audit Logging (`src/lib/audit.ts`)**: Added asynchronous non-blocking structured audit logging for all auth events (`LOGIN_SUCCESS`, `LOGIN_FAILED`, `RATE_LIMITED`, `SESSION_REVOKED`).
+
+### 4. Authoritative Role-Based Access Control (RBAC) Matrix
+- **Auth Guardrails (`src/lib/auth-guard.ts`)**:
+  - `requireAdmin()`: Enforces administrator privileges across server actions.
+  - `requireStudent(targetStudentId?)`: Enforces active athlete enrollment and prevents cross-athlete tampering.
+  - `requireAuth()`: Enforces authenticated session.
+  - `authorize(user, action, resourceOwnerId)`: Complete authorization matrix across `{anon, student-self, student-other, admin} × {READ, WRITE, DELETE, ADMIN}`.
+- **Server Action Protection**: Upgraded all actions in `src/actions/admin.ts`, `src/actions/fees.ts`, `src/actions/student.ts`, and `src/actions/chat.ts` to use authoritative guards and internal UUID references.
+
+### 5. Test Suite Verification
+- Added 4 new test suites (total 5 suites, 36 tests passing):
+  - `tests/unit/password.test.ts`: Bcrypt cost 12, plaintext upgrade detection, <8 char rejection.
+  - `tests/unit/session.test.ts`: Token signing, signature verification, tampering detection, forged secret rejection, expiration.
+  - `tests/unit/authz-matrix.test.ts`: Full RBAC matrix verification across all 16 permission combinations.
+  - `tests/unit/rate-limit.test.ts`: Sliding-window attempt counting, blocking, and reset.

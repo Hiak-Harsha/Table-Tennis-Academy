@@ -2,7 +2,8 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { requireAdmin, requireAny } from '@/lib/auth-utils'
+import { requireAdmin, requireAny } from '@/lib/auth-guard'
+import { hashPassword } from '@/lib/password'
 import { z } from 'zod'
 
 // Validation Schemas
@@ -11,9 +12,9 @@ const StudentSchema = z.object({
   batch: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']),
   age: z.preprocess((v) => Number(v), z.number().min(5).max(70)),
   phone: z.string().regex(/^\d{10}$/, '10-digit phone number required'),
-  password: z.string().min(6, 'Security Threshold: Password must be 6+ characters.'),
+  password: z.string().min(8, 'Security Threshold: Password must be 8+ characters.'),
   coachName: z.string().optional(),
-  contactDetails: z.string().optional()
+  contactDetails: z.string().optional(),
 })
 
 const TournamentSchema = z.object({
@@ -21,14 +22,14 @@ const TournamentSchema = z.object({
   venue: z.string().min(3),
   level: z.string(),
   entryFee: z.preprocess((v) => Number(v), z.number().min(0)),
-  date: z.string().transform(v => new Date(v)),
-  eligibility: z.string().optional()
+  date: z.string().transform((v) => new Date(v)),
+  eligibility: z.string().optional(),
 })
 
 export async function createStudentAction(prevState: any, formData: FormData) {
   try {
     await requireAdmin()
-    
+
     // Validate inputs
     const validated = StudentSchema.parse({
       name: formData.get('name'),
@@ -37,21 +38,23 @@ export async function createStudentAction(prevState: any, formData: FormData) {
       phone: formData.get('phone'),
       password: formData.get('password'),
       coachName: formData.get('coachName'),
-      contactDetails: formData.get('contactDetails')
+      contactDetails: formData.get('contactDetails'),
     })
 
-    const studentIdStr = 'TTA-' + Math.floor(1000 + Math.random() * 9000);
+    const studentIdStr = 'TTA-' + Math.floor(1000 + Math.random() * 9000)
 
     const existing = await prisma.user.findUnique({ where: { phone: validated.phone } })
     if (existing) return { error: `Phone number ${validated.phone} is already registered.` }
+
+    const hashedPassword = await hashPassword(validated.password)
 
     await prisma.$transaction(async (tx: any) => {
       const newUser = await tx.user.create({
         data: {
           phone: validated.phone,
-          passwordHash: validated.password,
-          role: 'STUDENT'
-        }
+          passwordHash: hashedPassword,
+          role: 'STUDENT',
+        },
       })
 
       await tx.student.create({
@@ -178,14 +181,17 @@ export async function createTournamentAction(prevState: any, formData: FormData)
 export async function registerForTournamentAction(prevState: any, formData: FormData) {
   try {
     const session = await requireAny()
-    
-    const tournamentId = formData.get('tournamentId') as string;
-    const studentId = formData.get('studentId') as string;
-    const amountPaid = parseFloat(formData.get('amountPaid') as string);
+
+    const tournamentId = formData.get('tournamentId') as string
+    let studentId = formData.get('studentId') as string
+    const amountPaid = parseFloat(formData.get('amountPaid') as string)
 
     // Security: Only allow student to register for themselves
-    if (session.role === 'STUDENT' && session.studentId !== studentId) {
-      return { error: 'Vulnerability Detected: Identity mismatch during registration.' }
+    if (session.role === 'STUDENT') {
+      if (session.studentId !== studentId && session.internalStudentId !== studentId) {
+        return { error: 'Access Denied: Cannot register for another athlete.' }
+      }
+      studentId = session.internalStudentId || studentId
     }
 
     if (!tournamentId || !studentId || !amountPaid) return { error: 'Missing registration parameters.' };

@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma'
-import { getSession } from '@/lib/auth-utils'
+import { getCurrentUser as getSession } from '@/lib/auth-guard'
 import BatchChat from '@/components/BatchChat'
 
 function getInitials(name: string) {

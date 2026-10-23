@@ -1,4 +1,4 @@
-import { getSession } from '@/lib/auth-utils'
+import { getCurrentUser as getSession } from '@/lib/auth-guard'
 import prisma from '@/lib/prisma'
 import TournamentHubClient from '@/components/TournamentHubClient'
 
@@ -17,7 +17,7 @@ export default async function StudentTournaments() {
         <h1 style={{ fontSize: '1.2rem' }}>Tournament Hub</h1>
         <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: 0 }}>Browse events, track history, and register.</p>
       </div>
-      <TournamentHubClient tournaments={tournaments} myRegistrations={myRegistrations} studentId={payload.studentId} />
+      <TournamentHubClient tournaments={tournaments} myRegistrations={myRegistrations} studentId={payload.studentId || ''} />
     </div>
   )
 }

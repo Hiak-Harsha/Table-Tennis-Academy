@@ -2,25 +2,25 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { requireAdmin, requireAny } from '@/lib/auth-utils'
+import { requireAdmin, requireAny } from '@/lib/auth-guard'
 import { z } from 'zod'
 
 const FeeSchema = z.object({
   studentId: z.string().uuid(),
   amount: z.preprocess((v) => Number(v), z.number().min(1, 'Amount must be positive')),
-  dueDate: z.string().transform(v => new Date(v)),
-  interval: z.enum(['MONTHLY', 'QUARTERLY', 'YEARLY', 'ONE_TIME']).default('MONTHLY')
+  dueDate: z.string().transform((v) => new Date(v)),
+  interval: z.enum(['MONTHLY', 'QUARTERLY', 'YEARLY', 'ONE_TIME']).default('MONTHLY'),
 })
 
 export async function addFeeAction(prevState: any, formData: FormData) {
   try {
     await requireAdmin()
-    
+
     const validated = FeeSchema.parse({
       studentId: formData.get('studentId'),
       amount: formData.get('amount'),
       dueDate: formData.get('dueDate'),
-      interval: formData.get('interval')
+      interval: formData.get('interval'),
     })
 
     await prisma.academyFee.create({
@@ -29,8 +29,8 @@ export async function addFeeAction(prevState: any, formData: FormData) {
         amount: validated.amount,
         dueDate: validated.dueDate,
         status: 'DUE',
-        interval: validated.interval
-      }
+        interval: validated.interval,
+      },
     })
 
     revalidatePath('/admin/fees')
@@ -44,15 +44,16 @@ export async function addFeeAction(prevState: any, formData: FormData) {
 
 export async function updateFeeStatusAction(feeId: string, status: string) {
   try {
-    const session = await requireAny()
-    
+    const user = await requireAny()
+
     // Safety check: a student can only mark their OWN fee as PAID (via gateway flow)
-    if (session.role === 'STUDENT') {
+    if (user.role === 'STUDENT') {
+      const studentInternalId = user.student?.id || user.internalStudentId
       const targetFee = await prisma.academyFee.findUnique({ where: { id: feeId } })
-      if (!targetFee || targetFee.studentId !== session.studentId) {
+      if (!targetFee || targetFee.studentId !== studentInternalId) {
         return { error: 'Unauthorized: Cannot modify external fee record.' }
       }
-      if (status !== 'PAID') return { error: 'Vulnerability: Invalid status transition for student.' }
+      if (status !== 'PAID') return { error: 'Invalid status transition for student.' }
     }
 
     await prisma.academyFee.update({
@@ -60,7 +61,7 @@ export async function updateFeeStatusAction(feeId: string, status: string) {
       data: {
         status,
         paymentDate: status === 'PAID' ? new Date() : null,
-      }
+      },
     })
     revalidatePath('/admin/fees')
     revalidatePath('/student/fees')
