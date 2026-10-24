@@ -22,16 +22,19 @@ export class ForbiddenError extends Error {
 
 export type AuthAction = 'READ' | 'WRITE' | 'DELETE' | 'ADMIN'
 
+import { cache } from 'react'
+
 /**
- * Get current authenticated user from session cookie (authoritative DB check)
+ * Get current authenticated user from session cookie (authoritative DB check).
+ * Memoized per-request using React.cache to avoid redundant DB roundtrips.
  */
-export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
+export const getCurrentUser = cache(async (): Promise<AuthenticatedUser | null> => {
   const cookieStore = await cookies()
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value
   if (!token) return null
 
   return validateSession(token)
-}
+})
 
 /**
  * Require any authenticated user or throw UnauthorizedError
@@ -91,11 +94,14 @@ export async function requireStudent(targetStudentId?: string): Promise<
 /**
  * Require specific role or redirect (useful for RSC page components)
  */
-export async function requireRoleOrRedirect(allowedRoles: ('ADMIN' | 'STUDENT')[]): Promise<AuthenticatedUser> {
+export async function requireRoleOrRedirect(
+  allowedRoles: ('ADMIN' | 'STUDENT')[] = ['STUDENT', 'ADMIN'],
+  reason = 'expired'
+): Promise<AuthenticatedUser> {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/login')
+    redirect(`/login?reason=${reason}`)
   }
 
   if (!allowedRoles.includes(user.role)) {
@@ -105,6 +111,8 @@ export async function requireRoleOrRedirect(allowedRoles: ('ADMIN' | 'STUDENT')[
 
   return user
 }
+
+export const requireUserOrRedirect = requireRoleOrRedirect
 
 /**
  * Central authorization matrix:

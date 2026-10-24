@@ -1,7 +1,55 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit'
 
-describe('Rate Limiting (Sliding Window)', () => {
+vi.mock('@/lib/prisma', () => {
+  const store = new Map<string, { key: string; count: number; resetAt: Date }>()
+
+  const mockTx = {
+    rateLimit: {
+      findUnique: vi.fn(async ({ where }: { where: { key: string } }) => {
+        return store.get(where.key) || null
+      }),
+      upsert: vi.fn(
+        async ({
+          where,
+          create,
+          update,
+        }: {
+          where: { key: string }
+          create: { key: string; count: number; resetAt: Date }
+          update: { count: number; resetAt: Date }
+        }) => {
+          const existing = store.get(where.key)
+          if (existing) {
+            existing.count = update.count
+            existing.resetAt = update.resetAt
+            return existing
+          }
+          store.set(where.key, { ...create })
+          return create
+        }
+      ),
+      update: vi.fn(async ({ where, data }: { where: { key: string }; data: { count: { increment: number } } }) => {
+        const item = store.get(where.key)!
+        item.count += data.count.increment
+        return item
+      }),
+      deleteMany: vi.fn(async ({ where }: { where: { key: string } }) => {
+        store.delete(where.key)
+        return { count: 1 }
+      }),
+    },
+  }
+
+  return {
+    default: {
+      $transaction: vi.fn(async (cb: (tx: typeof mockTx) => Promise<any>) => cb(mockTx)),
+      rateLimit: mockTx.rateLimit,
+    },
+  }
+})
+
+describe('Rate Limiting (Postgres-backed with atomic transaction)', () => {
   const testKey = 'test-ip-127.0.0.1'
 
   beforeEach(async () => {

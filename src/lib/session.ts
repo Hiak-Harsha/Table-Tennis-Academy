@@ -1,21 +1,23 @@
-import { SignJWT, jwtVerify } from 'jose'
 import crypto from 'crypto'
 import prisma from '@/lib/prisma'
-import { env } from '@/lib/env'
+import {
+  signSessionToken,
+  verifySessionToken,
+  hashToken,
+  SESSION_COOKIE_NAME,
+  SessionPayload,
+} from './session-token'
 
-export const SESSION_COOKIE_NAME =
-  process.env.NODE_ENV === 'production' ? '__Host-tta_session' : 'tta_session'
+export {
+  signSessionToken,
+  verifySessionToken,
+  hashToken,
+  SESSION_COOKIE_NAME,
+}
+export type { SessionPayload }
 
 const SESSION_EXPIRATION_DAYS = 7
-const secretKey = new TextEncoder().encode(env.SESSION_SECRET)
-
-export interface SessionPayload {
-  sub: string // userId
-  role: 'ADMIN' | 'STUDENT'
-  sid: string // session DB id
-  studentId?: string // logical athlete ID e.g. TTA-0892
-  internalStudentId?: string // Student UUID
-}
+const LAST_SEEN_UPDATE_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 
 export interface AuthenticatedUser {
   id: string
@@ -36,46 +38,20 @@ export interface AuthenticatedUser {
 }
 
 /**
- * Hash raw token for safe storage in DB
+ * Cookie option helper:
+ * Decides 'secure' and '__Host-' based on HTTPS availability or AUTH_COOKIE_INSECURE_DEV override.
  */
-export function hashToken(token: string): string {
-  return crypto.createHash('sha256').update(token).digest('hex')
-}
+export function getSessionCookieOptions(expiresAt: Date) {
+  const isHttps =
+    process.env.APP_URL?.startsWith('https://') ||
+    (process.env.NODE_ENV === 'production' && process.env.AUTH_COOKIE_INSECURE_DEV !== '1')
 
-/**
- * Generate a cryptographically signed JWT session token
- */
-export async function signSessionToken(payload: SessionPayload, expiresAt: Date): Promise<string> {
-  return new SignJWT({
-    role: payload.role,
-    sid: payload.sid,
-    studentId: payload.studentId,
-    internalStudentId: payload.internalStudentId,
-  })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setSubject(payload.sub)
-    .setIssuedAt()
-    .setExpirationTime(Math.floor(expiresAt.getTime() / 1000))
-    .sign(secretKey)
-}
-
-/**
- * Verify JWT signature without DB lookup (for Edge proxy/middleware checks)
- */
-export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
-  try {
-    const { payload } = await jwtVerify(token, secretKey, { algorithms: ['HS256'] })
-    if (!payload.sub || !payload.role || !payload.sid) return null
-
-    return {
-      sub: payload.sub,
-      role: payload.role as 'ADMIN' | 'STUDENT',
-      sid: payload.sid as string,
-      studentId: payload.studentId as string | undefined,
-      internalStudentId: payload.internalStudentId as string | undefined,
-    }
-  } catch {
-    return null
+  return {
+    httpOnly: true,
+    secure: isHttps,
+    sameSite: 'lax' as const,
+    path: '/',
+    expires: expiresAt,
   }
 }
 
@@ -115,6 +91,7 @@ export async function createSession(params: {
       tokenHash,
       userAgent: params.userAgent,
       ipAddress: params.ipAddress,
+      lastSeenAt: new Date(),
       expiresAt,
     },
   })
@@ -127,7 +104,8 @@ export async function createSession(params: {
  * 1. Verifies cryptographic signature
  * 2. Verifies session exists, is not revoked, and is unexpired in DB
  * 3. Verifies user exists
- * 4. Verifies student enrollmentStatus is ACTIVE (locks out SUSPENDED/INACTIVE immediately)
+ * 4. Verifies student enrollmentStatus is ACTIVE
+ * 5. Updates lastSeenAt at most once every 5 minutes
  */
 export async function validateSession(token: string | null | undefined): Promise<AuthenticatedUser | null> {
   if (!token) return null
@@ -163,6 +141,20 @@ export async function validateSession(token: string | null | undefined): Promise
       // User has been suspended/deactivated; reject access
       return null
     }
+  }
+
+  // 4. Throttle lastSeenAt updates to avoid excessive database writes (max once every 5 min)
+  const now = Date.now()
+  if (!sessionRecord.lastSeenAt || now - sessionRecord.lastSeenAt.getTime() > LAST_SEEN_UPDATE_INTERVAL_MS) {
+    // Fire-and-forget update
+    prisma.session
+      .update({
+        where: { id: sessionRecord.id },
+        data: { lastSeenAt: new Date() },
+      })
+      .catch((err) => {
+        console.error('[SESSION_UPDATE_ERROR] Failed to update lastSeenAt:', err)
+      })
   }
 
   const studentAccess = user.studentAccess
@@ -201,7 +193,7 @@ export async function revokeSession(token: string): Promise<void> {
 }
 
 /**
- * Revoke all active sessions for a user (e.g. on password change or suspension)
+ * Revoke all active sessions for a user (on password change, reset, or suspension)
  */
 export async function revokeAllUserSessions(userId: string): Promise<void> {
   await prisma.session.updateMany({
@@ -211,14 +203,16 @@ export async function revokeAllUserSessions(userId: string): Promise<void> {
 }
 
 /**
- * Cookie option helper
+ * Clean up expired sessions from the database
  */
-export function getSessionCookieOptions(expiresAt: Date) {
-  return {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    path: '/',
-    expires: expiresAt,
-  }
+export async function cleanupExpiredSessions(): Promise<number> {
+  const result = await prisma.session.deleteMany({
+    where: {
+      OR: [
+        { expiresAt: { lt: new Date() } },
+        { revokedAt: { not: null } },
+      ],
+    },
+  })
+  return result.count
 }

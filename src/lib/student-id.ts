@@ -2,15 +2,17 @@ import prisma from './prisma'
 
 /**
  * Generates an authoritative, collision-resistant student identification number (e.g. TTA-01001).
- * Uses monotonic sequence count with retry loop to prevent unique-constraint collisions at scale.
+ * Uses monotonic sequence with gap detection to ensure consistent 5-digit zero-padded format.
  */
-export async function generateStudentId(): Promise<string> {
-  const count = await prisma.student.count()
+export async function generateStudentId(txClient?: any): Promise<string> {
+  const client = txClient || prisma
+
+  const count = await client.student.count()
   let nextNum = count + 1001
 
-  for (let attempt = 0; attempt < 10; attempt++) {
+  for (let attempt = 0; attempt < 50; attempt++) {
     const candidate = `TTA-${String(nextNum).padStart(5, '0')}`
-    const existing = await prisma.student.findUnique({
+    const existing = await client.student.findUnique({
       where: { studentId: candidate },
       select: { id: true },
     })
@@ -20,7 +22,20 @@ export async function generateStudentId(): Promise<string> {
     nextNum += 1
   }
 
-  // High-entropy fallback if dense existing IDs are encountered
-  const randomSuffix = Math.floor(10000 + Math.random() * 90000)
-  return `TTA-${randomSuffix}`
+  // Consistent sequential fallback based on maximum existing ID
+  const latestStudent = await client.student.findFirst({
+    where: { studentId: { startsWith: 'TTA-' } },
+    orderBy: { studentId: 'desc' },
+    select: { studentId: true },
+  })
+
+  if (latestStudent?.studentId) {
+    const match = latestStudent.studentId.match(/TTA-(\d+)/)
+    if (match) {
+      const highest = parseInt(match[1], 10)
+      return `TTA-${String(highest + 1).padStart(5, '0')}`
+    }
+  }
+
+  return 'TTA-01001'
 }

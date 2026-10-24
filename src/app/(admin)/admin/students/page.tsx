@@ -1,9 +1,11 @@
 import prisma from '@/lib/prisma'
+import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import StudentRosterClient from '@/components/StudentRosterClient'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminStudents() {
+  await requireRoleOrRedirect(['ADMIN'])
   const students = await prisma.student.findMany({ orderBy: { fullName: 'asc' } })
 
   return (

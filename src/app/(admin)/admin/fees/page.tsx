@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma'
+import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import { FeeStatusControl, AddFeeModal } from '@/components/FeeControls'
 import ExportFeesButton from '@/components/ExportFeesButton'
 import { formatINR } from '@/lib/currency'
@@ -6,6 +7,7 @@ import { formatINR } from '@/lib/currency'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminFeesPage() {
+  await requireRoleOrRedirect(['ADMIN'])
   const fees = await prisma.academyFee.findMany({ include: { student: true }, orderBy: { dueDate: 'desc' } })
   const students = await prisma.student.findMany({ select: { id: true, studentId: true, fullName: true }, orderBy: { fullName: 'asc' } })
 

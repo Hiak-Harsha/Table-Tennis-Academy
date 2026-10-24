@@ -3,8 +3,10 @@ import {
   signSessionToken,
   verifySessionToken,
   hashToken,
+  getSessionCookieOptions,
   SessionPayload,
 } from '@/lib/session'
+import { getSessionCookieName } from '@/lib/session-token'
 import { SignJWT } from 'jose'
 
 describe('Session Cryptographic Tokens', () => {
@@ -81,5 +83,21 @@ describe('Session Cryptographic Tokens', () => {
     expect(hash1).toBe(hash2)
     expect(hash1).toHaveLength(64) // 256 bits = 64 hex chars
     expect(/^[a-f0-9]{64}$/.test(hash1)).toBe(true)
+  })
+
+  it('should configure session cookie options correctly for HTTP vs HTTPS environments', () => {
+    const expiry = new Date(Date.now() + 86400000)
+    const opts = getSessionCookieOptions(expiry)
+
+    expect(opts.httpOnly).toBe(true)
+    expect(opts.sameSite).toBe('lax')
+    expect(opts.path).toBe('/')
+    expect(opts.expires).toBe(expiry)
+    expect(typeof opts.secure).toBe('boolean')
+  })
+
+  it('should determine cookie name dynamically without throwing', () => {
+    const cookieName = getSessionCookieName()
+    expect(cookieName === 'tta_session' || cookieName === '__Host-tta_session').toBe(true)
   })
 })

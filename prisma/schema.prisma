@@ -9,34 +9,41 @@ generator client {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  role          String         @default("STUDENT") // ADMIN, STUDENT
-  phone         String?        @unique
-  passwordHash  String?
-  createdAt     DateTime       @default(now())
-  studentAccess Student?
-  notifications Notification[]
-  sessions      Session[]
+  id              String         @id @default(uuid())
+  role            String         @default("STUDENT") // ADMIN, STUDENT
+  phone           String?        @unique
+  loginId         String?        @unique // For admin handles (e.g. 'admin')
+  phoneVerifiedAt DateTime?
+  passwordHash    String?
+  createdAt       DateTime       @default(now())
+  studentAccess   Student?
+  notifications   Notification[]
+  sessions        Session[]
 }
 
 model Student {
-  id               String              @id @default(uuid())
-  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId           String              @unique
-  studentId        String              @unique
-  fullName         String
-  age              Int
-  batchType        String              // BEGINNER, INTERMEDIATE, ADVANCED
-  coachName        String?
-  contactDetails   String?
-  enrollmentStatus String              @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, GRADUATED
-  bio              String?             @default("Aspiring Table Tennis Athlete")
-  socialTwitter    String?
-  socialInsta      String?
-  fees             AcademyFee[]
-  tournaments      TournamentPayment[]
-  chatMessages     ChatMessage[]       @relation("SentMessages")
-  payments         Payment[]
+  id                String              @id @default(uuid())
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String              @unique
+  studentId         String              @unique
+  fullName          String
+  age               Int
+  batchType         String              // BEGINNER, INTERMEDIATE, ADVANCED
+  coachName         String?
+  contactDetails    String?
+  enrollmentStatus  String              @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, GRADUATED
+  bio               String?             @default("Aspiring Table Tennis Athlete")
+  socialTwitter     String?
+  socialInsta       String?
+  guardianName      String?
+  guardianPhone     String?
+  guardianConsent   Boolean             @default(false)
+  guardianConsentAt DateTime?
+  consentVersion    String?
+  fees              AcademyFee[]
+  tournaments       TournamentPayment[]
+  chatMessages      ChatMessage[]       @relation("SentMessages")
+  payments          Payment[]
 
   @@index([batchType])
   @@index([enrollmentStatus])
@@ -205,19 +212,30 @@ model ChatReadReceipt {
 }
 
 model Session {
-  id        String    @id @default(uuid())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  tokenHash String    @unique
-  userAgent String?
-  ipAddress String?
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
+  id         String    @id @default(uuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  tokenHash  String    @unique
+  userAgent  String?
+  ipAddress  String?
+  lastSeenAt DateTime?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
 
   @@index([userId])
   @@index([tokenHash])
   @@index([expiresAt])
+  @@index([userId, revokedAt])
+}
+
+model RateLimit {
+  key       String   @id
+  count     Int      @default(0)
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }
 
 model AuditLog {

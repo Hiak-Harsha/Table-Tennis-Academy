@@ -1,12 +1,9 @@
-import { getCurrentUser as getSession } from '@/lib/auth-guard'
+import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import prisma from '@/lib/prisma'
 import TournamentHubClient from '@/components/TournamentHubClient'
 
 export default async function StudentTournaments() {
-  const payload = await getSession()
-  if (!payload || payload.role !== 'STUDENT') {
-    return <div style={{ padding: '2rem', fontSize: '0.85rem' }}>Session expired. Please log in.</div>
-  }
+  const payload = await requireRoleOrRedirect(['STUDENT'])
 
   const tournaments = await prisma.tournament.findMany({ orderBy: { date: 'asc' } })
   const myRegistrations = await prisma.tournamentPayment.findMany({ where: { studentId: payload.studentId } })

@@ -1,10 +1,12 @@
 import prisma from '@/lib/prisma'
+import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import Link from 'next/link'
 import { formatINR } from '@/lib/currency'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminDashboard() {
+  await requireRoleOrRedirect(['ADMIN'])
   const studentCount = await prisma.student.count()
   const totalRevenue = await prisma.academyFee.aggregate({ _sum: { amount: true }, where: { status: 'PAID' } })
   const pendingPayments = await prisma.academyFee.count({ where: { status: { not: 'PAID' } } })

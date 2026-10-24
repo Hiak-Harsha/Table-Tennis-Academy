@@ -1,13 +1,12 @@
 import prisma from '@/lib/prisma'
-import { getCurrentUser as getSession } from '@/lib/auth-guard'
+import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import Link from 'next/link'
 import { formatINR } from '@/lib/currency'
 
 export const dynamic = 'force-dynamic'
 
 export default async function StudentDashboard() {
-  const payload = await getSession()
-  if (!payload) return <div style={{ padding: '2rem', fontSize: '0.85rem' }}>Please log in to continue.</div>
+  const payload = await requireRoleOrRedirect(['STUDENT'])
 
   const student = await prisma.student.findUnique({
     where: { userId: payload.id },

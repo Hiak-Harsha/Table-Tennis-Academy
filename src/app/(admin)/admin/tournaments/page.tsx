@@ -1,10 +1,12 @@
 import prisma from '@/lib/prisma'
+import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import CreateTournamentModal from '@/components/CreateTournamentModal'
 import { formatINR } from '@/lib/currency'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminTournaments() {
+  await requireRoleOrRedirect(['ADMIN'])
   const tournaments = await prisma.tournament.findMany({
     orderBy: { date: 'asc' },
     include: { participants: true },

@@ -7,19 +7,27 @@ import LoadingButton from '@/components/LoadingButton'
 import { useToast } from '@/components/ToastProvider'
 
 export default function RegisterWizard() {
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [step, setStep] = useState<1 | 2>(1)
   const { showToast } = useToast()
   const [isPending, startTransition] = useTransition()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     age: '',
     batchType: 'BEGINNER',
     password: '',
+    guardianName: '',
+    guardianPhone: '',
+    guardianConsent: false,
   })
+
   const [showPassword, setShowPassword] = useState(false)
   const [inputOtp, setInputOtp] = useState('')
   const [cooldown, setCooldown] = useState(0)
+
+  const isMinor = Number(formData.age) > 0 && Number(formData.age) < 18
 
   // WebOTP API support on Android / supported browsers
   useEffect(() => {
@@ -54,9 +62,28 @@ export default function RegisterWizard() {
   // Step 1: Request 6-digit OTP
   const handleRequestOTP = (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMessage(null)
+
     if (!formData.fullName || !formData.phone || !formData.password || !formData.age) {
-      showToast('All fields are required.', 'ERROR')
+      const err = 'All applicant details are required.'
+      setErrorMessage(err)
+      showToast(err, 'ERROR')
       return
+    }
+
+    if (isMinor) {
+      if (!formData.guardianName || !formData.guardianPhone) {
+        const err = 'Guardian name and contact phone are required for athletes under 18.'
+        setErrorMessage(err)
+        showToast(err, 'ERROR')
+        return
+      }
+      if (!formData.guardianConsent) {
+        const err = 'Parental or guardian consent confirmation is required for athletes under 18.'
+        setErrorMessage(err)
+        showToast(err, 'ERROR')
+        return
+      }
     }
 
     startTransition(async () => {
@@ -70,6 +97,7 @@ export default function RegisterWizard() {
         setCooldown(res.cooldownSeconds || 30)
         setStep(2)
       } else {
+        setErrorMessage(res.message)
         showToast(res.message, 'ERROR')
       }
     })
@@ -78,8 +106,12 @@ export default function RegisterWizard() {
   // Step 2: Verify 6-digit OTP and complete account creation
   const handleVerifyOTP = (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMessage(null)
+
     if (inputOtp.trim().length !== 6) {
-      showToast('Please enter the 6-digit verification code.', 'ERROR')
+      const err = 'Please enter the 6-digit verification code.'
+      setErrorMessage(err)
+      showToast(err, 'ERROR')
       return
     }
 
@@ -90,23 +122,32 @@ export default function RegisterWizard() {
       verifyFd.append('code', inputOtp.trim())
 
       const verifyRes = await verifyOtpAction(null, verifyFd)
-      if (!verifyRes.success) {
+      if (!verifyRes.success || !verifyRes.verificationToken) {
+        setErrorMessage(verifyRes.message)
         showToast(verifyRes.message, 'ERROR')
         return
       }
 
-      showToast('Phone verified successfully! Finalizing account...', 'SUCCESS')
+      showToast('Mobile verified successfully! Completing registration...', 'SUCCESS')
 
-      // Complete registration with verified phone
+      // Complete registration with single-use verificationToken
       const regFd = new FormData()
       regFd.append('fullName', formData.fullName)
       regFd.append('phone', formData.phone)
       regFd.append('password', formData.password)
       regFd.append('age', String(formData.age))
       regFd.append('batchType', formData.batchType)
+      regFd.append('verificationToken', verifyRes.verificationToken)
 
-      const regRes = (await registerStudentAction(null, regFd)) as any
+      if (isMinor) {
+        regFd.append('guardianName', formData.guardianName)
+        regFd.append('guardianPhone', formData.guardianPhone)
+        regFd.append('guardianConsent', 'true')
+      }
+
+      const regRes = await registerStudentAction(null, regFd)
       if (regRes?.error) {
+        setErrorMessage(regRes.error)
         showToast(regRes.error, 'ERROR')
       }
     })
@@ -138,6 +179,7 @@ export default function RegisterWizard() {
     borderRadius: '8px',
     outline: 'none',
     fontSize: '0.9rem',
+    boxSizing: 'border-box' as const,
   }
 
   const labelStyle = {
@@ -188,7 +230,7 @@ export default function RegisterWizard() {
           ))}
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
           <div
             style={{
               width: '40px',
@@ -207,31 +249,53 @@ export default function RegisterWizard() {
             🏓
           </div>
           <h2 style={{ fontSize: '1.4rem', marginBottom: '0.25rem' }}>
-            {step === 1 ? 'Join the Academy' : 'Verify Mobile Number'}
+            {step === 1 ? 'Athlete Registration' : 'Verify Mobile Number'}
           </h2>
           <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.85rem', margin: 0 }}>
-            {step === 1 ? 'Fill in your details to get started.' : `6-digit security code sent to ${formData.phone}`}
+            {step === 1 ? 'Create your academy athlete account' : `6-digit security code sent to ${formData.phone}`}
           </p>
         </div>
 
+        {errorMessage && (
+          <div
+            role="alert"
+            aria-live="polite"
+            style={{
+              background: 'hsla(350, 89%, 60%, 0.1)',
+              border: '1px solid hsla(350, 89%, 60%, 0.3)',
+              color: '#f87171',
+              padding: '0.65rem 0.85rem',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              marginBottom: '1rem',
+              lineHeight: 1.4,
+            }}
+          >
+            {errorMessage}
+          </div>
+        )}
+
         {/* STEP 1: Registration Form */}
         {step === 1 && (
-          <form onSubmit={handleRequestOTP} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <form onSubmit={handleRequestOTP} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.75rem' }}>
               <div>
-                <label style={labelStyle}>Full Name</label>
+                <label htmlFor="fullName" style={labelStyle}>Full Name</label>
                 <input
+                  id="fullName"
                   required
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   type="text"
                   placeholder="e.g. Sharath Kamal"
+                  autoComplete="name"
                   style={inputStyle}
                 />
               </div>
               <div>
-                <label style={labelStyle}>Age</label>
+                <label htmlFor="age" style={labelStyle}>Age</label>
                 <input
+                  id="age"
                   required
                   value={formData.age}
                   onChange={(e) => setFormData({ ...formData, age: e.target.value })}
@@ -245,7 +309,7 @@ export default function RegisterWizard() {
             </div>
 
             <div>
-              <label style={labelStyle}>Mobile Number (+91)</label>
+              <label htmlFor="phone" style={labelStyle}>Mobile Number (+91)</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span
                   style={{
@@ -261,11 +325,13 @@ export default function RegisterWizard() {
                   +91
                 </span>
                 <input
+                  id="phone"
                   required
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   type="tel"
                   inputMode="numeric"
+                  autoComplete="tel"
                   placeholder="9876543210"
                   style={inputStyle}
                 />
@@ -273,8 +339,9 @@ export default function RegisterWizard() {
             </div>
 
             <div>
-              <label style={labelStyle}>Training Level</label>
+              <label htmlFor="batchType" style={labelStyle}>Training Level</label>
               <select
+                id="batchType"
                 required
                 value={formData.batchType}
                 onChange={(e) => setFormData({ ...formData, batchType: e.target.value })}
@@ -288,7 +355,7 @@ export default function RegisterWizard() {
 
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                <label style={labelStyle}>Password (Minimum 8 Characters)</label>
+                <label htmlFor="password" style={labelStyle}>Password (Minimum 8 Characters)</label>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -299,15 +366,76 @@ export default function RegisterWizard() {
                 </button>
               </div>
               <input
+                id="password"
                 required
                 minLength={8}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
+                autoComplete="new-password"
                 style={inputStyle}
               />
             </div>
+
+            {/* Minor Consent Section for Athletes under 18 */}
+            {isMinor && (
+              <div
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '10px',
+                  padding: '1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                }}
+              >
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f59e0b' }}>
+                  Parental / Guardian Consent (Athlete Under 18)
+                </div>
+
+                <div>
+                  <label htmlFor="guardianName" style={labelStyle}>Guardian Full Name</label>
+                  <input
+                    id="guardianName"
+                    required={isMinor}
+                    value={formData.guardianName}
+                    onChange={(e) => setFormData({ ...formData, guardianName: e.target.value })}
+                    type="text"
+                    placeholder="e.g. Ramesh Kumar"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="guardianPhone" style={labelStyle}>Guardian Contact Number (+91)</label>
+                  <input
+                    id="guardianPhone"
+                    required={isMinor}
+                    value={formData.guardianPhone}
+                    onChange={(e) => setFormData({ ...formData, guardianPhone: e.target.value })}
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="e.g. 9876543210"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', color: '#cbd5e1', marginTop: '0.25rem' }}>
+                  <input
+                    type="checkbox"
+                    required={isMinor}
+                    checked={formData.guardianConsent}
+                    onChange={(e) => setFormData({ ...formData, guardianConsent: e.target.checked })}
+                    style={{ marginTop: '0.2rem' }}
+                  />
+                  <span>
+                    I confirm that I am the legal guardian of the applicant and hereby grant consent for their training enrollment and academy communications.
+                  </span>
+                </label>
+              </div>
+            )}
 
             <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.75rem', lineHeight: '1.4', margin: '0.25rem 0' }}>
               By continuing, you agree to the{' '}
@@ -318,13 +446,13 @@ export default function RegisterWizard() {
               <Link href="/privacy" target="_blank" style={{ color: 'hsl(var(--accent-blue))', textDecoration: 'underline' }}>
                 Privacy Policy
               </Link>
-              . For athletes under 18, parental/guardian consent is confirmed.
+              .
             </p>
 
             <LoadingButton
               variant="primary"
               loadingText="SENDING CODE..."
-              style={{ marginTop: '0.5rem', width: '100%' }}
+              style={{ marginTop: '0.25rem', width: '100%' }}
             >
               Verify Mobile & Continue →
             </LoadingButton>
@@ -389,7 +517,7 @@ export default function RegisterWizard() {
                   fontWeight: 600,
                 }}
               >
-                ← Edit Mobile
+                ← Edit Details
               </button>
 
               <div aria-live="polite" aria-atomic="true">
@@ -416,7 +544,7 @@ export default function RegisterWizard() {
         <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.75rem' }}>
           <span style={{ color: 'hsl(var(--text-muted))' }}>Already registered?</span>{' '}
           <Link href="/login" style={{ color: 'hsl(var(--accent-blue))', textDecoration: 'none', fontWeight: 700 }}>
-            Login
+            Sign In
           </Link>
         </div>
       </div>

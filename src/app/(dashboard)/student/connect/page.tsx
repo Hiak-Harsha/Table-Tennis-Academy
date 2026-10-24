@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma'
-import { getCurrentUser as getSession } from '@/lib/auth-guard'
+import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import BatchChat from '@/components/BatchChat'
 
 function getInitials(name: string) {
@@ -20,8 +20,7 @@ const batchConfig: Record<string, { label: string; color: string }> = {
 }
 
 export default async function PlayerDirectory() {
-  const payload = await getSession()
-  if (!payload) return <div style={{ padding: '2rem', fontSize: '0.85rem' }}>Please log in.</div>
+  const payload = await requireRoleOrRedirect(['STUDENT'])
 
   const currentStudent = await prisma.student.findUnique({ where: { userId: payload.id } })
   if (!currentStudent) return <div style={{ padding: '2rem', fontSize: '0.85rem' }}>Student record missing.</div>

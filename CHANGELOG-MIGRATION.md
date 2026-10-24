@@ -4,6 +4,51 @@ All breaking changes, schema modifications, security updates, and URL/env variab
 
 ---
 
+## Phase A: Authentication Fixes & Hardening (Completed & Verified)
+
+### 1. Canonical Identity Resolution (Fixes A1)
+- Added `src/lib/identity.ts` with `resolveLoginIdentifier(input)` resolving raw 10-digit Indian numbers, spaced numbers (`98765 43210`), `+91` numbers, and 0-prefixed numbers uniformly to E.164 (`+91XXXXXXXXXX`).
+- Student IDs (`TTA-XXXXX`) and admin login IDs (`loginId: "admin"`) resolved cleanly.
+- Updated `unifiedLoginAction`, `requestOtpAction`, `createStudentAction`, `scripts/create-admin.ts`, and `prisma/seed.ts` to use canonical resolution.
+
+### 2. Real Prisma Migrations (Fixes A2, D6)
+- Created baseline migration `prisma/migrations/20261024000000_init/migration.sql` and `migration_lock.toml`.
+- Added `RateLimit` table (`key`, `count`, `resetAt`, `updatedAt`) for multi-instance serverless rate limiting.
+- Added `User.loginId` (unique handle for admin) and `User.phoneVerifiedAt`.
+- Added `Session.lastSeenAt` and `@@index([userId, revokedAt])`.
+- Added guardian fields to `Student` (`guardianName`, `guardianPhone`, `guardianConsent`, `guardianConsentAt`, `consentVersion`).
+- Configured Vercel build command: `prisma migrate deploy && prisma generate && next build`.
+
+### 3. Session & Cookie Hardening (Fixes A3, A4, A5, A10, A11)
+- Extracted pure jose JWT signing/verification into `src/lib/session-token.ts` (zero database or Prisma imports). Next.js 16 `src/proxy.ts` imports solely from `session-token.ts`.
+- Rewrote `src/lib/env.ts` to remove `VERCEL === '1'` from build phase checks, enforcing real 32+ char `SESSION_SECRET`, PostgreSQL `DATABASE_URL`, and non-console SMS providers in production runtime.
+- Hardened cookie options: `__Host-` and `secure: true` dynamically conditional on HTTPS availability; added `AUTH_COOKIE_INSECURE_DEV=1` escape hatch for local-production HTTP testing.
+- Wrapped `getCurrentUser` with React `cache()` for per-request memoization.
+- Replaced all dead-end text divs ("Access Denied", "Please log in") with `requireRoleOrRedirect` that redirects with reason query params. Added `/api/auth/clear` route to cleanly clear cookies on redirect.
+- Protected `/login` page: redirects authenticated users immediately to their role dashboard.
+
+### 4. Constant-Time Login & Nonce Error Announcements (Fixes A6, A9)
+- Always executes bcrypt compare against `DUMMY_BCRYPT_HASH` when an identifier does not exist to eliminate user enumeration timing side channels.
+- Password verification runs before account status checks; returns generic invalid credentials message on bad credentials and distinct inactive account message only after valid password.
+- State returns `{ error, ts, referenceId }`; client alerts and screen readers re-announce repeated identical error attempts via `ts` nonce.
+- Added show/hide password toggle, accessible `role="alert"`, `autocomplete="username"`, `autocomplete="current-password"`, and `inputmode="tel"`.
+
+### 5. Durable Rate Limiting (Fixes A8, B3)
+- Backed `checkRateLimit` by atomic PostgreSQL `RateLimit` table transactions with graceful in-memory fallback.
+- Removed module-scope `setInterval`.
+- Extracted client IP using platform-trusted headers (`x-vercel-forwarded-for` / `x-forwarded-for`).
+
+### 6. Atomic OTP Verification & Action Binding (Fixes A7, B1, B2, B4, B5, B6)
+- Checked SMS provider dispatch return value; OTP challenges are not committed and cooldowns are not started if provider returns failure.
+- Atomic transaction for OTP verification: verifies attempts < maxAttempts, increments attempts counter atomically, verifies constant-time HMAC hash, and marks consumed.
+- Generates single-use signed `verificationToken` upon OTP success binding phone and purpose.
+- `registerStudentAction` enforces and validates `verificationToken`.
+- Added `/forgot-password` recovery flow: phone → OTP → token → new password with session revocation.
+- Added parental/guardian consent fields for minor athletes (under 18).
+- Deterministic 5-digit zero-padded student ID generator (`TTA-XXXXX`) without random fallbacks.
+
+---
+
 ## Phase 0: Safety Net & Hygiene (Completed)
 
 ### 1. Security & Hygiene Removals

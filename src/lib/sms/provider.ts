@@ -1,8 +1,13 @@
 import { env } from '../env'
 
+export interface SmsSendResult {
+  success: boolean
+  error?: string
+}
+
 export interface SmsProvider {
   name: string
-  sendOtp(phone: string, code: string): Promise<boolean>
+  sendOtp(phone: string, code: string): Promise<SmsSendResult>
 }
 
 /**
@@ -12,7 +17,7 @@ export interface SmsProvider {
 export class ConsoleProvider implements SmsProvider {
   name = 'console'
 
-  async sendOtp(phone: string, code: string): Promise<boolean> {
+  async sendOtp(phone: string, code: string): Promise<SmsSendResult> {
     if (env.NODE_ENV === 'production') {
       throw new Error('[SMS] ConsoleProvider is strictly forbidden in production. Configure a real SMS gateway.')
     }
@@ -23,16 +28,12 @@ export class ConsoleProvider implements SmsProvider {
     console.log(`Security Code: ${code}`)
     console.log(`Valid for: 5 minutes`)
     console.log(`======================================================\n`)
-    return true
+    return { success: true }
   }
 }
 
 /**
  * MSG91 SMS Provider (India DLT Compliant)
- * Requirements for India:
- * - DLT Registration with Indian Telecom (TRAI)
- * - Approved Entity ID & Header (Sender ID, e.g., TTACAD)
- * - Approved Content Template with variable {#var#} for OTP
  */
 export class Msg91Provider implements SmsProvider {
   name = 'msg91'
@@ -44,10 +45,10 @@ export class Msg91Provider implements SmsProvider {
     this.templateId = templateId || process.env.MSG91_TEMPLATE_ID || ''
   }
 
-  async sendOtp(phone: string, code: string): Promise<boolean> {
+  async sendOtp(phone: string, code: string): Promise<SmsSendResult> {
     if (!this.authKey || !this.templateId) {
       console.error('[SMS MSG91] Missing MSG91_AUTH_KEY or MSG91_TEMPLATE_ID.')
-      return false
+      return { success: false, error: 'SMS service configuration is incomplete.' }
     }
 
     // MSG91 expects mobile number without leading '+'
@@ -69,13 +70,13 @@ export class Msg91Provider implements SmsProvider {
 
       const data = await response.json()
       if (response.ok && data.type === 'success') {
-        return true
+        return { success: true }
       }
       console.error('[SMS MSG91] Gateway error response:', data)
-      return false
+      return { success: false, error: data.message || 'SMS provider rejected the request.' }
     } catch (err) {
       console.error('[SMS MSG91] Failed to dispatch OTP:', err)
-      return false
+      return { success: false, error: 'Network error connecting to SMS provider.' }
     }
   }
 }
@@ -95,10 +96,10 @@ export class TwilioVerifyProvider implements SmsProvider {
     this.serviceSid = serviceSid || process.env.TWILIO_VERIFY_SERVICE_SID || ''
   }
 
-  async sendOtp(phone: string, code: string): Promise<boolean> {
+  async sendOtp(phone: string, code: string): Promise<SmsSendResult> {
     if (!this.accountSid || !this.authToken || !this.serviceSid) {
       console.error('[SMS Twilio] Missing Twilio credentials.')
-      return false
+      return { success: false, error: 'Twilio configuration is incomplete.' }
     }
 
     try {
@@ -119,10 +120,15 @@ export class TwilioVerifyProvider implements SmsProvider {
         body: body.toString(),
       })
 
-      return response.ok
+      if (response.ok) {
+        return { success: true }
+      }
+      const data = await response.text()
+      console.error('[SMS Twilio] Gateway error:', data)
+      return { success: false, error: 'Twilio Verify service error.' }
     } catch (err) {
       console.error('[SMS Twilio] Failed to dispatch OTP:', err)
-      return false
+      return { success: false, error: 'Network error connecting to Twilio.' }
     }
   }
 }

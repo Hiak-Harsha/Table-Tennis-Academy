@@ -1,4 +1,4 @@
-import { getCurrentUser as getSession } from '@/lib/auth-guard'
+import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import prisma from '@/lib/prisma'
 import { FeePaymentClient } from '@/components/FeePaymentClient'
 import { formatINR } from '@/lib/currency'
@@ -6,10 +6,7 @@ import { formatDate } from '@/lib/date'
 import { processFeeRecords } from '@/lib/fee-status'
 
 export default async function StudentFees() {
-  const payload = await getSession()
-  if (!payload || payload.role !== 'STUDENT') {
-    return <div style={{ padding: '2rem', fontSize: '0.85rem' }}>Access Denied. Please Login.</div>
-  }
+  const payload = await requireRoleOrRedirect(['STUDENT'])
 
   // Fetch all fees for this student
   const rawFees = await prisma.academyFee.findMany({

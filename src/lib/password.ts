@@ -1,6 +1,10 @@
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 
 const BCRYPT_SALT_ROUNDS = 12
+
+// Pre-computed valid bcrypt hash of a random 32-char string with cost 12 for dummy comparison
+export const DUMMY_BCRYPT_HASH = '$2a$12$L7H9OcmFk8v2j1k6r0p1MeoXo5rQY8n0K7l6f9c3s1A4b5C6d7E8G'
 
 /**
  * Validate password strength (minimum 8 characters)
@@ -32,22 +36,41 @@ export async function hashPassword(plainText: string): Promise<string> {
 }
 
 /**
- * Verify a password against a hash or legacy plaintext record
+ * Constant-time string comparison for legacy fallback
+ */
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, 'utf8')
+  const bufB = Buffer.from(b, 'utf8')
+  if (bufA.length !== bufB.length) {
+    return false
+  }
+  return crypto.timingSafeEqual(bufA, bufB)
+}
+
+/**
+ * Verify a password against a hash or legacy plaintext record.
+ * Always performs bcrypt compare (against dummy hash if input is missing or legacy)
+ * to prevent user enumeration timing side channels.
  */
 export async function verifyPassword(
   plainText: string,
   storedHashOrPlain: string | null | undefined
 ): Promise<{ matches: boolean; needsRehash: boolean }> {
-  if (!storedHashOrPlain || !plainText) return { matches: false, needsRehash: false }
+  if (!storedHashOrPlain || !plainText) {
+    await bcrypt.compare(plainText || '', DUMMY_BCRYPT_HASH)
+    return { matches: false, needsRehash: false }
+  }
 
-  // If already a bcrypt hash, perform standard bcrypt compare
+  // Standard bcrypt hash verification
   if (isBcryptHash(storedHashOrPlain)) {
     const matches = await bcrypt.compare(plainText, storedHashOrPlain)
     return { matches, needsRehash: false }
   }
 
-  // Legacy plaintext match check
-  const matches = plainText === storedHashOrPlain
+  // Legacy plaintext match check using constant-time comparison
+  const matches = timingSafeStringEqual(plainText, storedHashOrPlain)
+  // Run dummy bcrypt compare so legacy check doesn't create a detectable timing shortcut
+  await bcrypt.compare(plainText, DUMMY_BCRYPT_HASH)
   return { matches, needsRehash: matches }
 }
 

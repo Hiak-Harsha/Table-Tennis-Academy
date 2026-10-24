@@ -1,45 +1,73 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('Refusing to run seed script in production environment!')
+  const isDevOrTest =
+    process.env.NODE_ENV === 'development' ||
+    process.env.APP_ENV === 'development' ||
+    process.env.APP_ENV === 'test'
+
+  if (!isDevOrTest || process.env.NODE_ENV === 'production') {
+    throw new Error('Refusing to run seed script in production environment! Only permitted when NODE_ENV/APP_ENV is development or test.')
   }
 
   console.log('🌱 Starting database seed (development/test only)...')
 
+  // Hash passwords with bcrypt (cost 12)
+  const adminPasswordHash = await bcrypt.hash('adminadmin', 12)
+  const studentPasswordHash = await bcrypt.hash('password123', 12)
+
   // 1. Establish initial development system admin
   const adminUser = await prisma.user.upsert({
-    where: { phone: 'admin' },
-    update: {},
+    where: { phone: '+919999999999' },
+    update: {
+      loginId: 'admin',
+      passwordHash: adminPasswordHash,
+      role: 'ADMIN',
+    },
     create: {
-      phone: 'admin',
-      passwordHash: 'adminadmin',
+      phone: '+919999999999',
+      loginId: 'admin',
+      passwordHash: adminPasswordHash,
       role: 'ADMIN',
     },
   })
 
-  console.log('✅ Admin user created/verified:', adminUser.phone)
+  console.log('✅ Admin user created/verified: phone +919999999999, loginId admin')
 
-  // 2. Establish test student User
+  // 2. Establish test student User with canonical E.164 phone
   const studentUser = await prisma.user.upsert({
-    where: { phone: '1234567890' },
-    update: {},
-    create: {
-      phone: '1234567890',
-      passwordHash: 'password',
+    where: { phone: '+919876543210' },
+    update: {
+      passwordHash: studentPasswordHash,
       role: 'STUDENT',
+      phoneVerifiedAt: new Date(),
+    },
+    create: {
+      phone: '+919876543210',
+      passwordHash: studentPasswordHash,
+      role: 'STUDENT',
+      phoneVerifiedAt: new Date(),
     },
   })
 
   // 3. Connect Student Profile
   const studentProfile = await prisma.student.upsert({
     where: { userId: studentUser.id },
-    update: {},
+    update: {
+      studentId: 'TTA-01001',
+      fullName: 'Alex Johnson',
+      age: 20,
+      batchType: 'ADVANCED',
+      enrollmentStatus: 'ACTIVE',
+      contactDetails: 'alex@example.com',
+      bio: 'Competitive tournament player specializing in offensive topspin rallies.',
+    },
     create: {
       userId: studentUser.id,
-      studentId: 'TTA-0892',
+      studentId: 'TTA-01001',
       fullName: 'Alex Johnson',
       age: 20,
       batchType: 'ADVANCED',
