@@ -42,6 +42,9 @@ describe('Next.js Security Headers & Hardening Config', () => {
     expect(csp).toBeDefined()
     expect(csp).toContain("default-src 'self'")
     expect(csp).toContain("frame-ancestors 'none'")
+    expect(csp).not.toContain("'unsafe-eval'")
+    expect(csp).toContain('https://checkout.razorpay.com')
+    expect(csp).toContain('https://api.razorpay.com')
   })
 
   it('restricts allowed origins for server actions', () => {

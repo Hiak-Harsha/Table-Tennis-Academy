@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { formatINR } from '@/lib/currency'
 import { createPaymentOrderAction, checkPaymentStatusAction } from '@/actions/payments'
-import { generateWebhookSignature } from '@/lib/payment-security'
 
 interface PaymentProps {
   amount: number
@@ -16,6 +15,12 @@ interface PaymentProps {
   onSuccess: () => void
   onCancel: () => void
   redirectPath?: string
+}
+
+declare global {
+  interface Window {
+    Razorpay?: any
+  }
 }
 
 export default function PaymentGateway({
@@ -31,6 +36,7 @@ export default function PaymentGateway({
   const [isMobile, setIsMobile] = useState(false)
   const [loading, setLoading] = useState(true)
   const [orderId, setOrderId] = useState<string | null>(null)
+  const [keyId, setKeyId] = useState<string | null>(null)
   const [upiIntent, setUpiIntent] = useState<string>('')
   const [status, setStatus] = useState<'AWAITING' | 'CONFIRMING' | 'SUCCESS' | 'ERROR'>('AWAITING')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -64,9 +70,10 @@ export default function PaymentGateway({
 
       if (!mounted) return
 
-      if (res.success && res.orderId && res.upiIntent) {
+      if (res.success && res.orderId) {
         setOrderId(res.orderId)
-        setUpiIntent(res.upiIntent)
+        if (res.keyId) setKeyId(res.keyId)
+        if (res.upiIntent) setUpiIntent(res.upiIntent)
         setLoading(false)
       } else {
         setErrorMessage(res.error || 'Failed to initialize payment gateway order.')
@@ -136,54 +143,28 @@ export default function PaymentGateway({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`
   }
 
-  // Developer simulation helper: triggers genuine webhook payload with valid HMAC signature
-  const triggerDevWebhook = async () => {
-    if (!orderId) return
-    setStatus('CONFIRMING')
+  // Open official Razorpay Checkout modal if script loaded and keyId available
+  const openRazorpayCheckout = () => {
+    if (!orderId || !keyId || typeof window === 'undefined') return
 
-    try {
-      const payload = {
-        event: 'payment.captured',
-        id: `evt_test_${Date.now()}`,
-        payload: {
-          payment: {
-            entity: {
-              id: `pay_${Date.now()}`,
-              order_id: orderId,
-              amount,
-              currency: 'INR',
-              status: 'captured',
-              method: 'UPI',
-            },
-          },
+    if (window.Razorpay) {
+      const options = {
+        key: keyId,
+        amount,
+        currency: 'INR',
+        name: 'Table Tennis Academy',
+        description,
+        order_id: orderId,
+        handler: function () {
+          setStatus('CONFIRMING')
+          checkStatus()
+        },
+        theme: {
+          color: '#FF6A13',
         },
       }
-
-      const rawBody = JSON.stringify(payload)
-      // Dev webhook secret
-      const secret = 'dev_razorpay_webhook_secret_key_32_bytes_long'
-      const signature = generateWebhookSignature(rawBody, secret)
-
-      const res = await fetch('/api/webhooks/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-razorpay-signature': signature,
-        },
-        body: rawBody,
-      })
-
-      if (res.ok) {
-        // Status polling will immediately catch the CAPTURED status transition in DB
-        await checkStatus()
-      } else {
-        const data = await res.json()
-        setErrorMessage(data.error || 'Webhook trigger failed')
-        setStatus('ERROR')
-      }
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Simulation failed')
-      setStatus('ERROR')
+      const rzp = new window.Razorpay(options)
+      rzp.open()
     }
   }
 
@@ -424,29 +405,28 @@ export default function PaymentGateway({
                     Order Ref: {orderId}
                   </div>
                 )}
-              </div>
 
-              {/* Developer Test Webhook Simulation */}
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
-                <button
-                  type="button"
-                  onClick={triggerDevWebhook}
-                  className="btn btn-secondary"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    fontSize: '0.8rem',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px dashed var(--border-medium)',
-                    color: '#10b981',
-                  }}
-                >
-                  ⚡ [Dev Simulation] Dispatch Verified Webhook
-                </button>
+                {keyId && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <button
+                      type="button"
+                      onClick={openRazorpayCheckout}
+                      className="btn btn-secondary"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                      }}
+                    >
+                      💳 Pay with Card / Netbanking
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Cancel Button */}
-              <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+              <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
                 <button
                   type="button"
                   onClick={onCancel}

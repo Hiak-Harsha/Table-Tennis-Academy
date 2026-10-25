@@ -49,6 +49,46 @@ All breaking changes, schema modifications, security updates, and URL/env variab
 
 ---
 
+## Phase B: Real Payments & Gateway Robustness (Completed & Verified)
+
+### 1. Eliminated Client Secrets & Browser Webhook Forgery (Fixes C1)
+- Completely deleted `triggerDevWebhook` and the hardcoded secret `dev_razorpay_webhook_secret_key_32_bytes_long` from `src/components/PaymentGateway.tsx`.
+- Removed client-side import of `generateWebhookSignature`. Verified that `.next/static` bundles contain zero secrets (`grep -r "webhook_secret"` returns 0 matches).
+- Created server-only development payment simulator route `POST /api/dev/simulate-payment` guarded strictly by `NODE_ENV === 'development'` and administrator authentication (returns 404 in production).
+
+### 2. Payment Provider Abstraction & Real Order Creation (Fixes C2, C4)
+- Created `src/lib/payments/provider.ts` defining `PaymentProvider` interface, `RazorpayProvider` (calling official REST API with Basic Auth), and `MockPaymentProvider` (for test and development without live credentials).
+- Updated `createPaymentOrderAction`:
+  - Reuses existing open `CREATED` orders within 15-minute TTL to prevent duplicate order proliferation.
+  - Rejects fee orders if invoice is marked `PAID` or a `CAPTURED` payment record already exists in the database.
+  - Integrates tournament eligibility checks (`checkTournamentRegistrationWindow`, `checkTournamentCapacity`, `checkStudentTournamentEligibility`) before creating tournament payment orders.
+  - Returns sanitized `{ success: true, orderId, keyId, amount, currency, upiIntent, title }`.
+
+### 3. Webhook Robustness & Idempotency Engine (Fixes C3)
+- Rewrote `src/app/api/webhooks/payments/route.ts`:
+  - Enforces `X-Razorpay-Event-Id` header (and payload fallbacks) for idempotency. Duplicate processed events return 200 without reprocessing.
+  - Persists incoming webhook events as `RECEIVED` before attempting fulfillment transactions, ensuring retry safety.
+  - Verifies that webhook payment amount and currency match authoritative database records exactly; rejects amount tampering with 400.
+  - Executes atomic `$transaction` fulfilling fees, tournament enrollments, notifications, and transitioning `PaymentEvent` to `PROCESSED`.
+  - Supports `payment.captured`, `payment.failed`, and `refund.processed` transitions without crashing.
+  - Strictly typed with Zod schema (`RazorpayWebhookPayloadSchema`), eliminating all `any` types.
+
+### 4. Public Receipt Verification & Admin Operations (Fixes C5)
+- Created `src/lib/receipt.ts` resolving digital receipts across `AcademyFee`, `TournamentPayment`, and `Payment` tables.
+- Built public verification page `/verify/[receiptNo]` rendering official academy verification badge, athlete name, student ID, item, date, and digital seal.
+- Created scheduled reconciliation cron route `POST /api/cron/payment-reconciliation` resolving stale uncaptured orders and automatically aging overdue fees.
+- Added admin `refundPaymentAction` executing provider refunds and reverting fee/tournament states within audited transactions.
+
+### 5. Content Security Policy Hardening (Fixes C6)
+- Updated CSP in `next.config.ts`:
+  - Removed `'unsafe-eval'`.
+  - Added `https://checkout.razorpay.com` to `script-src` and `frame-src`.
+  - Added `https://api.razorpay.com` to `frame-src` and `connect-src`.
+  - Added `https://lumberjack.razorpay.com` to `connect-src`.
+- Updated `tests/unit/security-headers.test.ts` to assert Razorpay domain whitelist and absence of `'unsafe-eval'`.
+
+---
+
 ## Phase 0: Safety Net & Hygiene (Completed)
 
 ### 1. Security & Hygiene Removals

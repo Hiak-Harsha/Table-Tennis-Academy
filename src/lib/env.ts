@@ -47,6 +47,7 @@ const envSchema = z
     TWILIO_ACCOUNT_SID: z.string().optional(),
     TWILIO_AUTH_TOKEN: z.string().optional(),
     TWILIO_VERIFY_SERVICE_SID: z.string().optional(),
+    CRON_SECRET: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     const isProduction = data.NODE_ENV === 'production'
@@ -77,6 +78,15 @@ const envSchema = z
           code: z.ZodIssueCode.custom,
           message: 'Production runtime requires a real PostgreSQL DATABASE_URL.',
           path: ['DATABASE_URL'],
+        })
+      }
+
+      // 4. Enforce non-default RAZORPAY_WEBHOOK_SECRET if payments enabled
+      if (data.RAZORPAY_KEY_ID && (!data.RAZORPAY_WEBHOOK_SECRET || KNOWN_INSECURE_SECRETS.has(data.RAZORPAY_WEBHOOK_SECRET))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Production runtime requires a unique, secure RAZORPAY_WEBHOOK_SECRET when payments are enabled.',
+          path: ['RAZORPAY_WEBHOOK_SECRET'],
         })
       }
     }
