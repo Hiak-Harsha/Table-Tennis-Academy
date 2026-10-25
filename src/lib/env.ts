@@ -1,8 +1,13 @@
 import { z } from 'zod'
 
-// Only consider Next.js production build phase as build time
-// Do NOT include VERCEL === '1' or CI === 'true' as build time, because VERCEL === '1' is true at runtime on Vercel
-const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build'
+// Detect Next.js production build phase vs serverless runtime accurately
+const isBuildPhase =
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env.npm_lifecycle_event === 'build' ||
+  process.env.CI === 'true' ||
+  process.env.CI === '1' ||
+  Boolean(process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.LAMBDA_TASK_ROOT) ||
+  process.argv.some((arg) => arg.includes('next') && arg.includes('build'))
 
 const KNOWN_INSECURE_SECRETS = new Set([
   'development-insecure-secret-key-at-least-32-chars-long-do-not-use-in-prod',
