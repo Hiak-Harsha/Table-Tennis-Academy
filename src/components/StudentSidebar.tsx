@@ -8,7 +8,7 @@ const navLinks = [
   { href: '/student', label: 'Dashboard', icon: '📊', exact: true },
   { href: '/student/fees', label: 'Payments', icon: '💳', exact: false },
   { href: '/student/tournaments', label: 'Tournaments', icon: '🏆', exact: false },
-  { href: '/student/connect', label: 'Athlete Circle', icon: '🤝', exact: false },
+  { href: '/student/connect', label: 'Squad Chat', icon: '💬', exact: false },
 ]
 
 interface SidebarProps {
@@ -29,7 +29,7 @@ export default function StudentSidebar({ isOpen, onClose }: SidebarProps) {
       )}
 
       <aside className="glass" style={{
-        width: '220px', height: '100vh', padding: '1.25rem 1rem',
+        width: '220px', height: '100dvh', padding: '1.25rem 1rem',
         display: 'flex', flexDirection: 'column',
         borderRight: '1px solid var(--border-subtle)',
         position: 'fixed', top: 0, left: 0, zIndex: 999,

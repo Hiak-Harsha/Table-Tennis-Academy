@@ -417,6 +417,9 @@ table {
   .container {
     padding: 0 1rem;
   }
+  .main-content-viewport {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+  }
 }
 
 @media (min-width: 1025px) {

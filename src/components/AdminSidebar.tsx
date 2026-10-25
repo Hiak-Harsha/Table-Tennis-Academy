@@ -5,10 +5,10 @@ import { usePathname } from 'next/navigation'
 import { logoutAction } from '@/actions/auth'
 
 const navLinks = [
-  { href: '/admin', label: 'Command Center', icon: '🌌', exact: true },
+  { href: '/admin', label: 'Coach Desk', icon: '📊', exact: true },
   { href: '/admin/students', label: 'Roster', icon: '👥', exact: false },
-  { href: '/admin/fees', label: 'Finances', icon: '💰', exact: false },
-  { href: '/admin/tournaments', label: 'Tournaments', icon: '⚡', exact: false },
+  { href: '/admin/fees', label: 'Academy Fees', icon: '💳', exact: false },
+  { href: '/admin/tournaments', label: 'Tournaments', icon: '🏆', exact: false },
   { href: '/admin/chat', label: 'Batch Chat', icon: '💬', exact: false },
 ]
 
@@ -30,7 +30,7 @@ export default function AdminSidebar({ isOpen, onClose }: SidebarProps) {
       )}
 
       <aside className="glass" style={{
-        width: '220px', height: '100vh', padding: '1.25rem 1rem',
+        width: '220px', height: '100dvh', padding: '1.25rem 1rem',
         display: 'flex', flexDirection: 'column',
         borderRight: '1px solid var(--border-subtle)',
         position: 'fixed', top: 0, left: 0, zIndex: 999,
@@ -48,7 +48,7 @@ export default function AdminSidebar({ isOpen, onClose }: SidebarProps) {
                 display: 'grid', placeItems: 'center', fontSize: '0.9rem'
               }}>🏓</div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.8rem' }}>TTA Command</div>
+                <div style={{ fontWeight: 700, fontSize: '0.8rem' }}>TTA Academy</div>
                 <div style={{ fontSize: '0.6rem', color: 'hsl(var(--text-muted))' }}>Administrator</div>
               </div>
             </div>

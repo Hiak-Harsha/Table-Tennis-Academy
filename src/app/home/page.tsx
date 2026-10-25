@@ -14,8 +14,8 @@ export default function Home() {
             TTA Elite
           </Link>
           {/* Nav Links */}
-          <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '1.75rem', fontSize: '0.9rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div className="desktop-only" style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
               <a href="#about" style={{ textDecoration: 'none', color: 'inherit', transition: 'color 0.2s' }}
                 onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                 onMouseOut={e => (e.currentTarget.style.color = '#94a3b8')}>Facility</a>
@@ -26,9 +26,9 @@ export default function Home() {
                 onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                 onMouseOut={e => (e.currentTarget.style.color = '#94a3b8')}>Contact</a>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <Link href="/register" className="btn btn-secondary" style={{ padding: '0.6rem 1.5rem', fontSize: '0.9rem' }}>Apply Now</Link>
-              <Link href="/login" className="btn btn-primary" style={{ padding: '0.6rem 1.5rem', fontSize: '0.9rem' }}>Login</Link>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <Link href="/register" className="btn btn-secondary" style={{ padding: '0.45rem 0.9rem', fontSize: '0.8rem', minHeight: '36px' }}>Apply</Link>
+              <Link href="/login" className="btn btn-primary" style={{ padding: '0.45rem 1rem', fontSize: '0.8rem', minHeight: '36px' }}>Login</Link>
             </div>
           </div>
         </div>
@@ -57,12 +57,12 @@ export default function Home() {
             <p style={{ fontSize: '0.95rem', color: '#e4e4e7', maxWidth: '520px', marginBottom: '1.5rem', textShadow: '0 3px 8px rgba(0,0,0,0.5)', lineHeight: 1.5 }}>
               Stop playing ping-pong. Start training like a professional athlete. Elite ITTF tables, national-tier coaching, and real match analytics.
             </p>
-            <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               {/* Enroll Now → goes to registration, not login */}
-              <Link href="/register" className="btn btn-primary" style={{ padding: '0.75rem 2rem', fontSize: '0.9rem' }}>
+              <Link href="/register" className="btn btn-primary" style={{ padding: '0.75rem 1.75rem', fontSize: '0.9rem' }}>
                 Enroll Now — Free Trial
               </Link>
-              <a href="#about" className="btn btn-secondary" style={{ padding: '0.75rem 2rem', fontSize: '0.9rem' }}>
+              <a href="#about" className="btn btn-secondary" style={{ padding: '0.75rem 1.75rem', fontSize: '0.9rem' }}>
                 Explore Facility
               </a>
             </div>
@@ -72,11 +72,11 @@ export default function Home() {
 
       {/* Stats Strip */}
       <section style={{ background: 'var(--accent-red)', padding: '2rem 0' }}>
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem', textAlign: 'center' }}>
+        <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '1.5rem', textAlign: 'center' }}>
           {[['16', 'ITTF Tables'], ['8+', 'Certified Coaches'], ['200+', 'Active Athletes'], ['3x', 'State Champions']].map(([num, label]) => (
             <div key={label}>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>{num}</div>
-              <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '1.5px', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>{label}</div>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '1.5px', color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase' }}>{label}</div>
             </div>
           ))}
         </div>
@@ -84,8 +84,8 @@ export default function Home() {
 
       {/* Facility Section */}
       <section id="about" style={{ background: '#0d0d0d' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '600px' }}>
-          <div style={{ position: 'relative', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', minHeight: '500px' }}>
+          <div style={{ position: 'relative', overflow: 'hidden', minHeight: '300px' }}>
             <Image
               src="/images/academy.png"
               alt="Academy Facility Arena"
@@ -95,20 +95,20 @@ export default function Home() {
             />
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(to left, #0d0d0d 0%, transparent 30%)', zIndex: 1 }}></div>
           </div>
-          <div style={{ padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ padding: '2.5rem 1.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <span style={{ color: 'var(--accent-red)', fontWeight: 700, letterSpacing: '3px', fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '1rem', display: 'block' }}>Our Facility</span>
-            <h2 style={{ fontSize: '2.25rem', color: '#fff', marginBottom: '1rem', lineHeight: 1.1 }}>State-Of-The-Art Arena.</h2>
-            <p style={{ color: '#94a3b8', marginBottom: '1rem', fontSize: '1rem' }}>
+            <h2 style={{ fontSize: '2rem', color: '#fff', marginBottom: '1rem', lineHeight: 1.1 }}>State-Of-The-Art Arena.</h2>
+            <p style={{ color: '#94a3b8', marginBottom: '1rem', fontSize: '0.95rem' }}>
               16 premium Butterfly Centrefold tables on Gerflor Taraflex sports flooring, illuminated by 1,200 lux shadow-less LED tournament lighting.
             </p>
-            <p style={{ color: '#94a3b8', marginBottom: '2.5rem', fontSize: '1rem' }}>
+            <p style={{ color: '#94a3b8', marginBottom: '2rem', fontSize: '0.95rem' }}>
               We track biomechanics. Record matches in 4K. Analyze stroke path logic using integrated smart-camera systems.
             </p>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               {/* Student Portal login */}
-              <Link href="/login" className="btn btn-primary" style={{ padding: '0.875rem 2rem' }}>Student Portal</Link>
+              <Link href="/login" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem' }}>Student Portal</Link>
               {/* Admin access — goes to login where admin tab exists */}
-              <Link href="/login" className="btn btn-secondary" style={{ padding: '0.875rem 2rem' }}>Admin Access</Link>
+              <Link href="/login" className="btn btn-secondary" style={{ padding: '0.75rem 1.5rem' }}>Admin Access</Link>
             </div>
           </div>
         </div>

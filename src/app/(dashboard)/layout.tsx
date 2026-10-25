@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import StudentSidebar from '@/components/StudentSidebar'
+import StudentBottomNav from '@/components/StudentBottomNav'
 import MobileHeader from '@/components/MobileHeader'
 import NotificationBell from '@/components/NotificationBell'
 
@@ -33,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           flexShrink: 0 
         }}>
           <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            TTA Elite · Athlete Portal · Real-time Sync Active
+            TTA Academy · Athlete Portal · Real-time Sync Active
           </div>
           <NotificationBell />
         </header>
@@ -49,6 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {children}
           </div>
         </div>
+        <StudentBottomNav />
       </main>
     </div>
   )

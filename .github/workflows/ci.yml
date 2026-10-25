@@ -11,6 +11,26 @@ jobs:
     name: Lint, Typecheck, Test & Build
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tta_test
+          POSTGRES_PASSWORD: test_password_123
+          POSTGRES_DB: tta_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: 'postgresql://tta_test:test_password_123@localhost:5432/tta_test_db?schema=public'
+      SESSION_SECRET: 'test-secret-at-least-32-characters-long-for-testing'
+      NODE_ENV: 'test'
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,6 +47,12 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: Apply Migrations
+        run: npx prisma migrate deploy
+
+      - name: Verify Migration Schema Drift
+        run: npx prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datasource prisma/schema.prisma --exit-code
+
       - name: Lint
         run: npm run lint
 
@@ -35,14 +61,6 @@ jobs:
 
       - name: Run Test Suite
         run: npx vitest run
-        env:
-          DATABASE_URL: 'postgresql://test:test@localhost:5432/test?schema=public'
-          SESSION_SECRET: 'test-secret-at-least-32-characters-long-for-testing'
-          NODE_ENV: 'test'
 
       - name: Build Application
         run: npm run build
-        env:
-          DATABASE_URL: 'postgresql://test:test@localhost:5432/test?schema=public'
-          SESSION_SECRET: 'test-secret-at-least-32-characters-long-for-testing'
-          NODE_ENV: 'test'

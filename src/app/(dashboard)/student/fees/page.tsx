@@ -27,9 +27,9 @@ export default async function StudentFees() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: '1.25rem' }}>
+      <div className="dashboard-layout-grid" style={{ gap: '1.25rem' }}>
         {/* Main Column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
           {/* Summary / Next Due Card */}
           <section
             className="card glass"
@@ -40,7 +40,7 @@ export default async function StudentFees() {
               border: summary.overdueCount > 0 ? '1px solid rgba(239,68,68,0.3)' : undefined,
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div>
                 {summary.overdueCount > 0 ? (
                   <span
@@ -109,19 +109,19 @@ export default async function StudentFees() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 120px), 1fr))',
                 background: 'rgba(0,0,0,0.3)',
                 padding: '1rem',
                 borderRadius: '12px',
                 marginBottom: '1rem',
-                gap: '0.5rem',
+                gap: '0.75rem',
               }}
             >
               <div>
                 <div style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
                   Next Payable
                 </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f8fafc' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#f8fafc' }}>
                   {formatINR(nextPayable ? nextPayable.amount : 0)}
                 </div>
               </div>
@@ -132,7 +132,7 @@ export default async function StudentFees() {
                 </div>
                 <div
                   style={{
-                    fontSize: '1.4rem',
+                    fontSize: '1.25rem',
                     fontWeight: 900,
                     color: summary.totalOutstandingPaise > 0 ? '#f87171' : '#10b981',
                   }}
@@ -145,7 +145,7 @@ export default async function StudentFees() {
                 <div style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
                   Total Settled
                 </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#10b981' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#10b981' }}>
                   {formatINR(summary.totalPaidPaise)}
                 </div>
               </div>
@@ -165,8 +165,8 @@ export default async function StudentFees() {
           </section>
 
           {/* Complete Prioritized Fees List (Overdue -> Due -> Upcoming -> Paid) */}
-          <section className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+          <section className="card" style={{ minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <h3 style={{ margin: 0, color: '#60a5fa', fontSize: '0.9rem', fontWeight: 800 }}>
                 All Academy Invoices ({summary.fees.length})
               </h3>
@@ -175,87 +175,89 @@ export default async function StudentFees() {
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1.2fr 1fr 1fr 1fr',
-                  padding: '0.5rem 0.75rem',
-                  color: '#64748b',
-                  fontSize: '0.65rem',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                }}
-              >
-                <span>Due Date</span>
-                <span>Interval</span>
-                <span style={{ textAlign: 'center' }}>Amount</span>
-                <span style={{ textAlign: 'right' }}>Status</span>
-              </div>
+            <div className="table-responsive">
+              <div style={{ minWidth: '400px', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.2fr 1fr 1fr 1fr',
+                    padding: '0.5rem 0.75rem',
+                    color: '#64748b',
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  }}
+                >
+                  <span>Due Date</span>
+                  <span>Interval</span>
+                  <span style={{ textAlign: 'center' }}>Amount</span>
+                  <span style={{ textAlign: 'right' }}>Status</span>
+                </div>
 
-              {summary.fees.length === 0 ? (
-                <p style={{ textAlign: 'center', padding: '1.5rem', color: '#475569', fontSize: '0.8rem' }}>
-                  No fee records found for this account.
-                </p>
-              ) : (
-                summary.fees.map((f) => (
-                  <div
-                    key={f.id}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1.2fr 1fr 1fr 1fr',
-                      padding: '0.65rem 0.75rem',
-                      background: f.isOverdue
-                        ? 'rgba(239,68,68,0.05)'
-                        : f.computedStatus === 'DUE'
-                        ? 'rgba(59,130,246,0.05)'
-                        : 'rgba(255,255,255,0.02)',
-                      borderLeft: f.isOverdue
-                        ? '3px solid #ef4444'
-                        : f.computedStatus === 'DUE'
-                        ? '3px solid #3b82f6'
-                        : f.computedStatus === 'PAID'
-                        ? '3px solid #10b981'
-                        : '3px solid #64748b',
-                      borderRadius: '6px',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <div>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{formatDate(f.dueDate, 'short')}</span>
-                      {f.paymentDate && (
-                        <div style={{ fontSize: '0.65rem', color: '#64748b' }}>
-                          Paid {formatDate(f.paymentDate, 'short')}
-                        </div>
-                      )}
-                    </div>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
-                      {f.interval || 'MONTHLY'}
-                    </span>
-                    <span style={{ textAlign: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
-                      {formatINR(f.amount)}
-                    </span>
-                    <span
+                {summary.fees.length === 0 ? (
+                  <p style={{ textAlign: 'center', padding: '1.5rem', color: '#475569', fontSize: '0.8rem' }}>
+                    No fee records found for this account.
+                  </p>
+                ) : (
+                  summary.fees.map((f) => (
+                    <div
+                      key={f.id}
                       style={{
-                        textAlign: 'right',
-                        fontWeight: 800,
-                        fontSize: '0.75rem',
-                        color:
-                          f.computedStatus === 'PAID'
-                            ? '#10b981'
-                            : f.computedStatus === 'OVERDUE'
-                            ? '#ef4444'
-                            : f.computedStatus === 'DUE'
-                            ? '#3b82f6'
-                            : '#94a3b8',
+                        display: 'grid',
+                        gridTemplateColumns: '1.2fr 1fr 1fr 1fr',
+                        padding: '0.65rem 0.75rem',
+                        background: f.isOverdue
+                          ? 'rgba(239,68,68,0.05)'
+                          : f.computedStatus === 'DUE'
+                          ? 'rgba(59,130,246,0.05)'
+                          : 'rgba(255,255,255,0.02)',
+                        borderLeft: f.isOverdue
+                          ? '3px solid #ef4444'
+                          : f.computedStatus === 'DUE'
+                          ? '3px solid #3b82f6'
+                          : f.computedStatus === 'PAID'
+                          ? '3px solid #10b981'
+                          : '3px solid #64748b',
+                        borderRadius: '6px',
+                        alignItems: 'center',
                       }}
                     >
-                      {f.statusLabel}
-                    </span>
-                  </div>
-                ))
-              )}
+                      <div>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{formatDate(f.dueDate, 'short')}</span>
+                        {f.paymentDate && (
+                          <div style={{ fontSize: '0.65rem', color: '#64748b' }}>
+                            Paid {formatDate(f.paymentDate, 'short')}
+                          </div>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
+                        {f.interval || 'MONTHLY'}
+                      </span>
+                      <span style={{ textAlign: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
+                        {formatINR(f.amount)}
+                      </span>
+                      <span
+                        style={{
+                          textAlign: 'right',
+                          fontWeight: 800,
+                          fontSize: '0.75rem',
+                          color:
+                            f.computedStatus === 'PAID'
+                              ? '#10b981'
+                              : f.computedStatus === 'OVERDUE'
+                              ? '#ef4444'
+                              : f.computedStatus === 'DUE'
+                              ? '#3b82f6'
+                              : '#94a3b8',
+                        }}
+                      >
+                        {f.statusLabel}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </section>
         </div>
