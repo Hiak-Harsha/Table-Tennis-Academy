@@ -2,7 +2,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { requireAdmin, requireAny } from '@/lib/auth-guard'
+import { requireAdmin } from '@/lib/auth-guard'
 import { rupeesToPaise, formatINR } from '@/lib/currency'
 import { FeeSchema } from '@/lib/validations'
 import { writeAuditLog } from '@/lib/audit'

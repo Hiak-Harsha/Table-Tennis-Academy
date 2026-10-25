@@ -1,12 +1,12 @@
 'use server'
 
 import prisma from '@/lib/prisma'
-import { requireAny } from '@/lib/auth-guard'
+import { requireAuth } from '@/lib/auth-guard'
 import { revalidatePath } from 'next/cache'
 
 export async function getNotificationsAction() {
   try {
-    const session = await requireAny()
+    const session = await requireAuth()
 
     const notifications = await prisma.notification.findMany({
       where: { userId: session.id },
@@ -36,7 +36,7 @@ export async function getNotificationsAction() {
 
 export async function markNotificationReadAction(notificationId: string) {
   try {
-    const session = await requireAny()
+    const session = await requireAuth()
 
     await prisma.notification.updateMany({
       where: { id: notificationId, userId: session.id },
@@ -52,7 +52,7 @@ export async function markNotificationReadAction(notificationId: string) {
 
 export async function markAllNotificationsReadAction() {
   try {
-    const session = await requireAny()
+    const session = await requireAuth()
 
     await prisma.notification.updateMany({
       where: { userId: session.id, isRead: false },

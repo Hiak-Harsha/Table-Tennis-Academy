@@ -108,6 +108,31 @@ All breaking changes, schema modifications, security updates, and URL/env variab
 
 ---
 
+## Phase D: Authorization & Data Access Cleanup (Completed & Verified)
+
+### 1. Server Actions Authorization Audit (Fixes D3)
+- Implemented comprehensive static analysis and runtime test `tests/unit/server-actions-auth.test.ts` scanning every exported function in `src/actions/*.ts`.
+- Enforces that every single exported server action either invokes an authoritative session guard (`requireAuth`, `requireStudent`, `requireAdmin`, etc.) or belongs to the audited public authentication allowlist (`unifiedLoginAction`, `registerStudentAction`, `requestOtpAction`, `verifyOtpAction`, `requestPasswordResetAction`, `resetPasswordAction`, `logoutAction`).
+- Replaced loose `requireAny()` with strict `requireAuth()` across `src/actions/notifications.ts` and `src/actions/fees.ts`.
+
+### 2. Private Attachment Storage & Protected Delivery (Fixes D4)
+- Rewrote `src/lib/storage.ts`:
+  - Deprecated public directory file writing (`/public/uploads/*`) and removed base64-in-DB fallbacks.
+  - Implemented private storage in local directory `storage/private_uploads` (with pluggable S3/cloud support).
+  - Generates unguessable 32-character random hex keys with file extensions.
+  - Returns `/api/uploads/{key}` URLs instead of direct public file links.
+- Created authenticated file delivery route `GET /api/uploads/[key]/route.ts`:
+  - Requires valid session authentication (`getCurrentUser()`).
+  - Detects magic bytes to prevent MIME-confusion attacks.
+  - Serves files with `X-Content-Type-Options: nosniff` and `Cache-Control: private, no-transform, max-age=3600`.
+
+### 3. Server Actions Allowed Origins Hardening (Fixes D5)
+- Hardened Next.js `experimental.serverActions.allowedOrigins` in `next.config.ts`:
+  - Eliminated the insecure `*.vercel.app` wildcard that allowed cross-origin action invocation from arbitrary foreign Vercel deployments.
+  - Explicitly derives allowed origins from environment configuration: `APP_ORIGINS` (comma-separated list), `APP_URL`, and `VERCEL_URL`.
+
+---
+
 ## Phase 0: Safety Net & Hygiene (Completed)
 
 ### 1. Security & Hygiene Removals

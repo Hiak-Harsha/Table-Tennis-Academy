@@ -47,10 +47,10 @@ describe('Next.js Security Headers & Hardening Config', () => {
     expect(csp).toContain('https://api.razorpay.com')
   })
 
-  it('restricts allowed origins for server actions', () => {
+  it('restricts allowed origins for server actions and excludes *.vercel.app wildcard', () => {
     const allowed = nextConfig.experimental?.serverActions?.allowedOrigins
     expect(Array.isArray(allowed)).toBe(true)
     expect(allowed).toContain('localhost:3000')
-    expect(allowed).toContain('*.vercel.app')
+    expect(allowed).not.toContain('*.vercel.app')
   })
 })

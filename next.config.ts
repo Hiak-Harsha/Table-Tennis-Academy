@@ -44,10 +44,18 @@ const securityHeaders = [
   },
 ]
 
-const vercelOrigins = [
+// Allowed Origins for Server Actions CSRF protection
+// Strictly disallows '*.vercel.app' wildcard to prevent cross-site action invocation
+const customOrigins = (process.env.APP_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+
+const allowedActionOrigins = [
   'localhost:3000',
   '127.0.0.1:3000',
-  '*.vercel.app',
+  ...customOrigins,
+  ...(process.env.APP_URL ? [process.env.APP_URL.replace(/^https?:\/\//, '')] : []),
   ...(process.env.VERCEL_URL ? [process.env.VERCEL_URL] : []),
 ]
 
@@ -68,7 +76,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: vercelOrigins,
+      allowedOrigins: allowedActionOrigins,
     },
   },
   async headers() {
