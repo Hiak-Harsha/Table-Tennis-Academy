@@ -7,7 +7,7 @@ import { generateUpiIntentUrl } from '@/lib/payment-security'
 import { writeAuditLog } from '@/lib/audit'
 import { revalidatePath } from 'next/cache'
 import { getPaymentProvider } from '@/lib/payments/provider'
-import { assertValidPaymentTransition } from '@/lib/payment-state'
+import { assertValidPaymentTransition, PaymentState } from '@/lib/payment-state'
 import {
   checkTournamentRegistrationWindow,
   checkTournamentCapacity,
@@ -409,7 +409,7 @@ export async function refundPaymentAction(params: {
       return { success: false, error: 'Payment record not found.' }
     }
 
-    assertValidPaymentTransition(payment.status as any, 'REFUNDED')
+    assertValidPaymentTransition(payment.status as PaymentState, 'REFUNDED')
 
     // Call payment provider if online payment
     if (payment.provider === 'RAZORPAY' && payment.paymentId) {

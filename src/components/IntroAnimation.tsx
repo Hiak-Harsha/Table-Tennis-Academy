@@ -17,7 +17,7 @@ export default function IntroAnimation() {
       return
     }
     sessionStorage.setItem('tta_intro_seen', '1')
-    setShow(true)
+    const t0 = setTimeout(() => setShow(true), 0)
 
     const t1 = setTimeout(() => setPhase('text'), 800)
     const t2 = setTimeout(() => setPhase('exit'), 2800)
@@ -26,7 +26,7 @@ export default function IntroAnimation() {
       router.replace('/home')
     }, 3600)
 
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
   }, [router])
 
   const handleSkip = () => {

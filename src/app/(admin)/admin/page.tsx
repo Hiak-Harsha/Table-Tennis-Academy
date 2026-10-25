@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma'
 import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import Link from 'next/link'
 import { formatINR } from '@/lib/currency'
+import { formatDate } from '@/lib/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,7 +72,7 @@ export default async function AdminDashboard() {
             <Link href="/admin/students" style={{ color: 'hsl(var(--accent-blue))', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            {recentStudents.map((s: any) => (
+            {recentStudents.map((s) => (
               <div key={s.id} style={{
                 display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.75rem',
                 alignItems: 'center', padding: '0.6rem 0.75rem', borderRadius: '8px',
@@ -128,11 +129,11 @@ export default async function AdminDashboard() {
             <h4 style={{ fontSize: '0.65rem', marginBottom: '0.75rem', color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Upcoming Events</h4>
             {upcomingTournaments.length === 0 ? (
               <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.75rem', fontStyle: 'italic', margin: 0 }}>No scheduled events.</p>
-            ) : upcomingTournaments.map((t: any) => (
+            ) : upcomingTournaments.map((t) => (
               <div key={t.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-subtle)' }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t.name}</div>
                 <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', marginTop: '0.15rem' }}>
-                  {new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {t.venue}
+                  {formatDate(t.date, 'short')} • {t.venue}
                 </div>
               </div>
             ))}

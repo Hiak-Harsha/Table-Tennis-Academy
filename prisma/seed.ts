@@ -20,7 +20,7 @@ async function main() {
   const studentPasswordHash = await bcrypt.hash('password123', 12)
 
   // 1. Establish initial development system admin
-  const adminUser = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { phone: '+919999999999' },
     update: {
       loginId: 'admin',

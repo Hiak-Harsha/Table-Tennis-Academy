@@ -5,7 +5,14 @@ import TournamentHubClient from '@/components/TournamentHubClient'
 export default async function StudentTournaments() {
   const payload = await requireRoleOrRedirect(['STUDENT'])
 
-  const tournaments = await prisma.tournament.findMany({ orderBy: { date: 'asc' } })
+  const tournaments = await prisma.tournament.findMany({
+    orderBy: { date: 'asc' },
+    include: {
+      _count: {
+        select: { participants: true },
+      },
+    },
+  })
   const myRegistrations = await prisma.tournamentPayment.findMany({ where: { studentId: payload.studentId } })
 
   return (

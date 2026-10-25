@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth-guard'
 import { authorizeChannelSubscription, SubscriptionContext } from '@/lib/realtime/authz'
+import type { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
     const sinceDate = sinceParam ? new Date(sinceParam) : new Date(Date.now() - 30 * 1000)
 
     // Build channel queries for chat messages
-    const channelConditions: any[] = []
+    const channelConditions: Prisma.ChatMessageWhereInput[] = []
     for (const ch of channels) {
       if (ch === 'global') {
         channelConditions.push({ category: 'GLOBAL' })

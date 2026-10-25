@@ -2,42 +2,117 @@ import prisma from '@/lib/prisma'
 import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import Link from 'next/link'
 import { formatINR } from '@/lib/currency'
+import { formatDate } from '@/lib/date'
+import { processFeeRecords } from '@/lib/fee-status'
 
 export const dynamic = 'force-dynamic'
 
-export default async function StudentDashboard() {
+interface StudentDashboardProps {
+  searchParams?: Promise<{ welcome?: string; registered?: string }>
+}
+
+export default async function StudentDashboard({ searchParams }: StudentDashboardProps) {
   const payload = await requireRoleOrRedirect(['STUDENT'])
+  const resolvedParams = searchParams ? await searchParams : {}
+  const showWelcome = resolvedParams.welcome === 'true' || resolvedParams.registered === 'true'
 
   const student = await prisma.student.findUnique({
     where: { userId: payload.id },
     include: {
-      fees: { orderBy: { dueDate: 'desc' }, take: 1 },
+      fees: { orderBy: { dueDate: 'asc' } },
       tournaments: {
         include: { tournament: true },
         orderBy: { tournament: { date: 'asc' } },
-        take: 1
-      }
-    }
+        take: 1,
+      },
+    },
   })
 
   if (!student) return <div style={{ padding: '2rem', fontSize: '0.85rem' }}>Student record not found.</div>
 
   const broadcasts = await prisma.broadcast.findMany({
     orderBy: { createdAt: 'desc' },
-    take: 3
+    take: 3,
   })
 
   const alerts = await prisma.notification.findMany({
     where: { userId: payload.id },
     orderBy: { createdAt: 'desc' },
-    take: 3
+    take: 3,
   })
 
-  const latestFee = student.fees[0]
+  // Authoritative server-side fee processing: Overdue -> Due -> Upcoming -> Paid
+  const feeSummary = processFeeRecords(student.fees)
   const nextTournament = student.tournaments[0]?.tournament
+
+  // Authoritative "Current Dues" logic (does NOT treat future upcoming fees as current overdue)
+  const feeCardConfig = (() => {
+    if (feeSummary.overdueCount > 0) {
+      return {
+        label: 'Overdue Dues',
+        status: `${feeSummary.overdueCount} OVERDUE`,
+        amount: feeSummary.totalOverduePaise,
+        color: '#ef4444',
+        bg: 'rgba(239, 68, 68, 0.1)',
+        subtext: 'Payment past due date',
+      }
+    }
+    if (feeSummary.totalDuePaise > 0) {
+      return {
+        label: 'Dues Today',
+        status: 'DUE TODAY',
+        amount: feeSummary.totalDuePaise,
+        color: '#f59e0b',
+        bg: 'rgba(245, 158, 11, 0.1)',
+        subtext: 'Due for settlement today',
+      }
+    }
+    if (feeSummary.nextPayableFee) {
+      return {
+        label: 'Upcoming Fee',
+        status: 'UPCOMING',
+        amount: feeSummary.nextPayableFee.amount,
+        color: 'hsl(var(--accent-blue))',
+        bg: 'rgba(59, 130, 246, 0.1)',
+        subtext: `Due on ${formatDate(feeSummary.nextPayableFee.dueDate, 'short')}`,
+      }
+    }
+    return {
+      label: 'Fees',
+      status: 'PAID',
+      amount: 0,
+      color: '#10b981',
+      bg: 'rgba(16, 185, 129, 0.1)',
+      subtext: 'All fees settled',
+    }
+  })()
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: '3rem', width: '100%', boxSizing: 'border-box' }}>
+      {/* Registration/Welcome Confirmation Banner */}
+      {showWelcome && (
+        <div
+          role="status"
+          style={{
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            color: '#10b981',
+            padding: '0.85rem 1.25rem',
+            borderRadius: '10px',
+            marginBottom: '1rem',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            boxSizing: 'border-box',
+            width: '100%',
+          }}
+        >
+          <span>✓</span>
+          <span>Welcome to Table Tennis Academy! Your athlete account is registered and ready.</span>
+        </div>
+      )}
       {/* Welcome Banner */}
       <div style={{
         position: 'relative', borderRadius: '12px', overflow: 'hidden',
@@ -70,13 +145,16 @@ export default async function StudentDashboard() {
 
           {/* Metric Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.75rem', width: '100%', boxSizing: 'border-box' }}>
-            <div className="card glass" style={{ borderLeft: `4px solid ${latestFee?.status === 'PAID' ? '#10b981' : 'hsl(var(--accent-red))'}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fees</span>
-                <span style={{ background: latestFee?.status === 'PAID' ? 'rgba(16,185,129,0.1)' : 'hsl(var(--accent-red-glow))', color: latestFee?.status === 'PAID' ? '#10b981' : 'hsl(var(--accent-red))', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{latestFee?.status || 'NONE'}</span>
+            <div className="card glass" style={{ borderLeft: `4px solid ${feeCardConfig.color}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{feeCardConfig.label}</span>
+                <span style={{ background: feeCardConfig.bg, color: feeCardConfig.color, padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{feeCardConfig.status}</span>
               </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.2rem' }}>{formatINR(latestFee?.amount || 0)}</div>
-              <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))', margin: 0 }}>Payment nexus active</p>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.2rem' }}>{formatINR(feeCardConfig.amount)}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.35rem' }}>
+                <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))', margin: 0 }}>{feeCardConfig.subtext}</p>
+                <Link href="/student/fees" style={{ color: 'hsl(var(--accent-blue))', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none' }}>Ledger →</Link>
+              </div>
             </div>
 
             <div className="card glass" style={{ borderLeft: '4px solid hsl(var(--accent-blue))' }}>
@@ -115,7 +193,7 @@ export default async function StudentDashboard() {
                 <div style={{ padding: '1.5rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px dashed var(--border-subtle)' }}>
                   <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.75rem', margin: 0 }}>No announcements.</p>
                 </div>
-              ) : broadcasts.map((b: any) => (
+              ) : broadcasts.map((b) => (
                 <div key={b.id} className="glass" style={{ padding: '0.75rem', borderLeft: b.category === 'URGENT' ? '3px solid hsl(var(--accent-red))' : '1px solid var(--border-subtle)', borderRadius: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
                     <span style={{
@@ -123,7 +201,7 @@ export default async function StudentDashboard() {
                       color: b.category === 'URGENT' ? 'hsl(var(--accent-red))' : 'hsl(var(--accent-blue))',
                       padding: '0.1rem 0.35rem', borderRadius: '3px', fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase'
                     }}>{b.category}</span>
-                    <span style={{ fontSize: '0.65rem', color: 'hsl(var(--text-muted))' }}>{new Date(b.createdAt).toLocaleDateString()}</span>
+                    <span style={{ fontSize: '0.65rem', color: 'hsl(var(--text-muted))' }}>{formatDate(b.createdAt, 'short')}</span>
                   </div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '0.2rem' }}>{b.title}</h4>
                   <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', margin: 0 }}>{b.message}</p>
@@ -166,10 +244,10 @@ export default async function StudentDashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               {alerts.length === 0 ? (
                 <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.75rem', fontStyle: 'italic', margin: 0 }}>No alerts.</p>
-              ) : alerts.map((a: any) => (
+              ) : alerts.map((a) => (
                 <div key={a.id} className="glass" style={{ padding: '0.5rem 0.65rem', borderLeft: '2px solid hsl(var(--accent-blue))', borderRadius: '6px', fontSize: '0.75rem' }}>
                   <p style={{ margin: 0, lineHeight: 1.4, color: '#e2e8f0' }}>{a.message}</p>
-                  <span style={{ fontSize: '0.6rem', color: 'hsl(var(--text-muted))', marginTop: '0.2rem', display: 'block' }}>{new Date(a.createdAt).toLocaleTimeString()}</span>
+                  <span style={{ fontSize: '0.6rem', color: 'hsl(var(--text-muted))', marginTop: '0.2rem', display: 'block' }}>{formatDate(a.createdAt, 'datetime')}</span>
                 </div>
               ))}
             </div>

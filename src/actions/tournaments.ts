@@ -1,5 +1,6 @@
 'use server'
 
+import crypto from 'crypto'
 import prisma from '@/lib/prisma'
 import { requireStudent } from '@/lib/auth-guard'
 import { revalidatePath } from 'next/cache'
@@ -17,6 +18,7 @@ export interface TournamentRegistrationResponse {
 
 /**
  * Authoritative, single server action for student tournament registration.
+ * Free tournaments register immediately; paid tournaments must be fulfilled through the payment gateway webhook.
  * Enforces future dates, registration deadlines, max player capacity,
  * eligibility criteria (batch & age), duplicate prevention, and DB-authoritative pricing.
  */
@@ -51,7 +53,14 @@ export async function registerForTournamentAction(
       return { error: 'Tournament not found or no longer active.' }
     }
 
-    // 2. Validate registration window (date in future, deadline not passed)
+    // 2. Paid tournaments must complete payment via gateway/webhook (single path)
+    if (tournament.entryFee > 0) {
+      return {
+        error: 'Online payment required for this tournament. Please complete payment at checkout to register.',
+      }
+    }
+
+    // 3. Validate registration window (date in future, deadline not passed)
     const windowCheck = checkTournamentRegistrationWindow({
       date: tournament.date,
       registrationDeadline: tournament.registrationDeadline,
@@ -60,7 +69,7 @@ export async function registerForTournamentAction(
       return { error: windowCheck.reason || 'Tournament registration is closed.' }
     }
 
-    // 3. Validate participant capacity
+    // 4. Validate participant capacity
     const capacityCheck = checkTournamentCapacity(
       tournament.maxPlayers,
       tournament._count.participants
@@ -69,7 +78,7 @@ export async function registerForTournamentAction(
       return { error: capacityCheck.reason || 'Tournament has reached maximum capacity.' }
     }
 
-    // 4. Validate student eligibility (active enrollment, batch type, age limits)
+    // 5. Validate student eligibility (active enrollment, batch type, age limits)
     const eligibilityCheck = checkStudentTournamentEligibility(
       {
         id: student.id,
@@ -95,7 +104,7 @@ export async function registerForTournamentAction(
       return { error: eligibilityCheck.reason || 'You do not meet the eligibility requirements for this tournament.' }
     }
 
-    // 5. Enforce no duplicates
+    // 6. Enforce no duplicates
     const existingRegistration = await prisma.tournamentPayment.findUnique({
       where: {
         studentId_tournamentId: {
@@ -108,15 +117,18 @@ export async function registerForTournamentAction(
       return { error: 'You are already registered for this tournament.' }
     }
 
-    // 6. Record registration with DB-authoritative entry fee
+    // 7. Record free registration with cryptographically secure confirmation details
+    const refCode = crypto.randomBytes(3).toString('hex').toUpperCase()
+    const confirmationDetails = `TTA-${Date.now().toString(36).toUpperCase()}-${refCode}`
+
     const registration = await prisma.tournamentPayment.create({
       data: {
         studentId: student.id,
         tournamentId: tournament.id,
-        amountPaid: tournament.entryFee,
-        paymentStatus: tournament.entryFee === 0 ? 'PAID' : 'PENDING',
-        paymentDate: tournament.entryFee === 0 ? new Date() : null,
-        confirmationDetails: `TTA-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+        amountPaid: 0,
+        paymentStatus: 'PAID',
+        paymentDate: new Date(),
+        confirmationDetails,
       },
     })
 

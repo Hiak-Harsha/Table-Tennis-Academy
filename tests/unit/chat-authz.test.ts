@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getChatMessagesAction, getChatRecipientsAction, sendChatMessageAction } from '@/actions/chat'
+import { getChatMessagesAction, getChatRecipientsAction } from '@/actions/chat'
 import prisma from '@/lib/prisma'
 
 vi.mock('@/lib/auth-guard', () => ({

@@ -41,7 +41,7 @@ export default async function PlayerDirectory() {
         {/* Left: Player Cards */}
         <div style={{ overflowY: 'auto', paddingRight: '0.5rem', minHeight: 0 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 150px), 1fr))', gap: '0.5rem' }}>
-            {students.map((s: any) => {
+            {students.map((s) => {
               const bt = batchConfig[s.batchType] || { label: s.batchType, color: '#60a5fa' }
               const isMe = s.userId === payload.id
               return (

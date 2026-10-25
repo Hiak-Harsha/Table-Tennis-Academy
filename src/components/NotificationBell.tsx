@@ -101,7 +101,8 @@ export default function NotificationBell({ userId: initialUserId }: { userId?: s
             if (data.notifications && data.notifications.length > 0) {
               setNotifications((prev) => {
                 const existingIds = new Set(prev.map((n) => n.id))
-                const newItems = data.notifications.filter((n: any) => !existingIds.has(n.id))
+                const incoming = Array.isArray(data.notifications) ? (data.notifications as NotificationItem[]) : []
+                const newItems = incoming.filter((n) => !existingIds.has(n.id))
                 if (newItems.length > 0) {
                   setUnreadCount((count) => count + newItems.length)
                   return [...newItems, ...prev]

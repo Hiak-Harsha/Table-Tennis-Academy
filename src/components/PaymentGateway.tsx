@@ -17,9 +17,14 @@ interface PaymentProps {
   redirectPath?: string
 }
 
+interface RazorpayInstance {
+  open: () => void
+  on: (event: string, callback: (response: unknown) => void) => void
+}
+
 declare global {
   interface Window {
-    Razorpay?: any
+    Razorpay?: new (options: Record<string, unknown>) => RazorpayInstance
   }
 }
 
@@ -45,10 +50,16 @@ export default function PaymentGateway({
 
   // Detect mobile device (touch primary pointer or user-agent)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const coarsePointer = window.matchMedia('(pointer: coarse)').matches
+    const mql = window.matchMedia('(pointer: coarse)')
+    const updatePointer = () => {
       const mobileAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-      setIsMobile(coarsePointer || mobileAgent)
+      setIsMobile(mql.matches || mobileAgent)
+    }
+    const rafId = requestAnimationFrame(updatePointer)
+    mql.addEventListener('change', updatePointer)
+    return () => {
+      cancelAnimationFrame(rafId)
+      mql.removeEventListener('change', updatePointer)
     }
   }, [])
 

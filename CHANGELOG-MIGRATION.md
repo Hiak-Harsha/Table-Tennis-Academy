@@ -133,6 +133,50 @@ All breaking changes, schema modifications, security updates, and URL/env variab
 
 ---
 
+## Phase E: Accuracy Fixes, Fee Authoritative Status & Strict Typing (Completed & Verified)
+
+### 1. Student Dashboard & Authoritative Fee Calculations (Fixes E1)
+- Replaced buggy single-fee query (`take: 1, orderBy: { dueDate: 'desc' }`) with fetching all fee records and passing them through `processFeeRecords(student.fees)`.
+- Authoritative Current Dues computation:
+  - Overdue balance (`totalOverduePaise`) when any unpaid fee has `dueDate < today`.
+  - Due today balance (`totalDuePaise`) when unpaid fee is due today.
+  - Upcoming fee (`nextPayableFee.amount`) when fees are upcoming, clearly displaying due date.
+  - Settle state ("All Dues Settled — Account in Good Standing") when 0 dues are owed. Future fees are never misrepresented as overdue.
+- Added celebratory welcome banner for newly enrolled athletes (`?welcome=true` or `?registered=true`).
+- Dynamic real-time date calculation using client local day boundary to prevent hydration mismatch while accurately reflecting current day fees.
+
+### 2. Timezone & Date Formatting Standardization (Fixes E2)
+- Replaced raw non-deterministic `toLocaleDateString` and UTC string slices with canonical `formatDate()` from `@/lib/date.ts`.
+- Standardized all database storage to UTC and all UI presentation to `Asia/Kolkata` (Indian Standard Time, IST).
+- Updated `ExportFeesButton.tsx`, `student/page.tsx`, `admin/page.tsx`, `admin/fees/page.tsx`, and `admin/tournaments/page.tsx`.
+
+### 3. Tournament Path Consolidation & Capacity Controls (Fixes E3)
+- Enforced single authoritative path for tournament entry:
+  - Free tournaments (`entryFeePaise === 0`): enroll directly via `registerForTournamentAction` within an audited database transaction.
+  - Paid tournaments (`entryFeePaise > 0`): strictly require payment order generation (`createPaymentOrderAction`) and fulfillment via verified webhook transaction. Direct bypass enrollment is rejected.
+- Fixed UI in `src/components/TournamentHubClient.tsx`: displays live spots remaining (`current / maxPlayers`), registration deadlines, and disables entry when capacity is reached or registration window has closed.
+
+### 4. Atomic Notification Fanout & Non-Truncated Broadcasts (Fixes E4)
+- Rewrote `broadcastNotificationAction` in `src/actions/admin.ts`:
+  - Eliminated abandoned `queueMicrotask` which prematurely dropped broadcast notifications on serverless function freeze.
+  - Performs atomic batch `prisma.notification.createMany` inside the server action lifecycle.
+  - Preserves complete notification messages without arbitrary 100-character truncation.
+
+### 5. Cryptographic ID Generation & Strict Zero-Any TypeScript (Fixes E5)
+- Replaced all insecure `Math.random()` pseudo-random generation in `tournaments.ts`, `BatchChat.tsx`, and `ToastProvider.tsx` with cryptographic random bytes and UUIDs (`crypto.randomUUID()` / `crypto.randomBytes()`).
+- Completely eradicated all `: any` and `as any` type escapes across `src/`:
+  - Cleaned up types in `BatchChat.tsx`, `StudentRosterClient.tsx`, `PwaRegister.tsx`, `receipt.ts`, `student-id.ts`, `fees.ts`, `chat.ts`, `simulate-payment/route.ts`, and `payments.ts`.
+- Fixed React 19 `react-hooks/set-state-in-effect` synchronous state warnings in `FeeControls.tsx`, `IntroAnimation.tsx`, and `PaymentGateway.tsx`.
+- Refined `src/lib/sentry.ts` logging context handling to preserve `undefined` when context is omitted.
+
+### 6. Verification Gates
+- **Unit Tests**: 36 test files, **224/224 tests passed** (4.17s).
+- **ESLint**: 0 errors across entire workspace.
+- **TypeScript**: `npm run typecheck` passed with 0 errors.
+- **Next.js Production Build**: `npm run build` compiled all 28 static and dynamic routes cleanly with Turbopack.
+
+---
+
 ## Phase 0: Safety Net & Hygiene (Completed)
 
 ### 1. Security & Hygiene Removals

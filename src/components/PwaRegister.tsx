@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from 'react'
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
 export default function PwaRegister() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showInstallBanner, setShowInstallBanner] = useState(false)
 
   useEffect(() => {
@@ -22,7 +27,7 @@ export default function PwaRegister() {
     // 2. Capture 'beforeinstallprompt' event for custom install banner
     const handler = (e: Event) => {
       e.preventDefault()
-      setDeferredPrompt(e)
+      setDeferredPrompt(e as BeforeInstallPromptEvent)
       // Check if user dismissed recently
       const dismissed = sessionStorage.getItem('tta_pwa_dismissed')
       if (!dismissed) {

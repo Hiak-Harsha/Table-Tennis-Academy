@@ -33,12 +33,17 @@ export default function RegisterWizard() {
   useEffect(() => {
     if (step === 2 && 'OTPCredential' in window) {
       const ac = new AbortController()
-      ;(navigator as any).credentials
-        ?.get({
+      const navWithCredentials = navigator as unknown as {
+        credentials?: {
+          get?: (options: { otp: { transport: string[] }; signal: AbortSignal }) => Promise<{ code?: string } | null>
+        }
+      }
+      navWithCredentials.credentials
+        ?.get?.({
           otp: { transport: ['sms'] },
           signal: ac.signal,
         })
-        .then((otp: any) => {
+        .then((otp) => {
           if (otp?.code) {
             setInputOtp(otp.code)
           }

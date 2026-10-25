@@ -2,6 +2,7 @@
 
 import { exportToCsv } from '@/lib/csv-export'
 import { formatINR } from '@/lib/currency'
+import { formatDate } from '@/lib/date'
 
 interface FeeExportItem {
   dueDate: string | Date
@@ -17,13 +18,13 @@ export default function ExportFeesButton({ fees }: { fees: FeeExportItem[] }) {
   const handleExport = () => {
     const headers = ['Due Date', 'Interval', 'Student ID', 'Player Name', 'Amount (INR)', 'Status', 'Paid On']
     const rows = fees.map(f => [
-      new Date(f.dueDate).toLocaleDateString('en-IN'),
+      formatDate(f.dueDate, 'short'),
       f.interval || 'MONTHLY',
       f.studentId,
       f.fullName,
       formatINR(f.amount),
       f.status,
-      f.paymentDate ? new Date(f.paymentDate).toLocaleDateString('en-IN') : '—',
+      f.paymentDate ? formatDate(f.paymentDate, 'short') : '—',
     ])
     exportToCsv('academy_fee_ledger', headers, rows)
   }

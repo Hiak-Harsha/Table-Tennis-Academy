@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { getVerifiedReceipt } from '@/lib/receipt'
 import { formatINR } from '@/lib/currency'
 import { formatDate } from '@/lib/date'

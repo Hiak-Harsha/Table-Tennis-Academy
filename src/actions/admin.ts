@@ -182,13 +182,29 @@ export async function broadcastNotificationAction(prevState: unknown, formData: 
       category: formData.get('category') || 'GENERAL',
     })
 
-    const broadcast = await prisma.broadcast.create({
-      data: {
-        title: validated.title,
-        message: validated.message,
-        category: validated.category,
-        author: 'Academy HQ',
-      },
+    // Atomic persistence of broadcast announcement and student notification fan-out
+    const broadcast = await prisma.$transaction(async (tx) => {
+      const b = await tx.broadcast.create({
+        data: {
+          title: validated.title,
+          message: validated.message,
+          category: validated.category,
+          author: 'Academy HQ',
+        },
+      })
+
+      const allUsers = await tx.user.findMany({ where: { role: 'STUDENT' }, select: { id: true } })
+      if (allUsers.length > 0) {
+        await tx.notification.createMany({
+          data: allUsers.map((u) => ({
+            userId: u.id,
+            type: 'GENERAL',
+            message: `${validated.title}: ${validated.message}`,
+          })),
+        })
+      }
+
+      return b
     })
 
     // Instant Real-Time Global Notification Broadcast (<50ms)
@@ -200,22 +216,6 @@ export async function broadcastNotificationAction(prevState: unknown, formData: 
         category: broadcast.category,
         createdAt: broadcast.createdAt.toISOString(),
       },
-    })
-
-    // Asynchronous non-blocking background fanout to individual athlete inboxes (preserving full message without truncation)
-    queueMicrotask(async () => {
-      try {
-        const allUsers = await prisma.user.findMany({ where: { role: 'STUDENT' }, select: { id: true } })
-        await prisma.notification.createMany({
-          data: allUsers.map((u) => ({
-            userId: u.id,
-            type: 'GENERAL',
-            message: `${validated.title}: ${validated.message}`,
-          })),
-        })
-      } catch (err) {
-        console.error('[BROADCAST_FANOUT_ERROR]', err)
-      }
     })
 
     revalidatePath('/student')

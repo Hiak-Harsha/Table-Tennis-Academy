@@ -9,6 +9,7 @@ import { saveUploadedFile } from '@/lib/storage'
 import { realtimeBus } from '@/lib/realtime/bus'
 import { getDmChannelName } from '@/lib/realtime/authz'
 import { z } from 'zod'
+import type { Prisma } from '@prisma/client'
 
 export interface ChatMessageResult {
   id: string
@@ -150,9 +151,10 @@ export async function sendChatMessageAction(formData: FormData) {
     revalidatePath('/student/connect')
     revalidatePath('/admin/chat')
     return { success: true, message: created }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
-    return { error: error.message || 'Transmission failed.' }
+    const message = error instanceof Error ? error.message : 'Transmission failed.'
+    return { error: message }
   }
 }
 
@@ -170,7 +172,7 @@ export async function getChatMessagesAction(params: {
   try {
     const session = await requireAuth()
 
-    const where: any = { category: params.category }
+    const where: Prisma.ChatMessageWhereInput = { category: params.category }
 
     if (params.category === 'BATCH') {
       if (session.role === 'STUDENT') {

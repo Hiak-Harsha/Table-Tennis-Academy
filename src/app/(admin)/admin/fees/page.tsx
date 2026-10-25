@@ -3,19 +3,40 @@ import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import { FeeStatusControl, AddFeeModal } from '@/components/FeeControls'
 import ExportFeesButton from '@/components/ExportFeesButton'
 import { formatINR } from '@/lib/currency'
+import { formatDate } from '@/lib/date'
+import { computeFeeStatus } from '@/lib/fee-status'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminFeesPage() {
   await requireRoleOrRedirect(['ADMIN'])
-  const fees = await prisma.academyFee.findMany({ include: { student: true }, orderBy: { dueDate: 'desc' } })
-  const students = await prisma.student.findMany({ select: { id: true, studentId: true, fullName: true }, orderBy: { fullName: 'asc' } })
+  const fees = await prisma.academyFee.findMany({
+    include: { student: true },
+    orderBy: { dueDate: 'desc' },
+  })
+  const students = await prisma.student.findMany({
+    select: { id: true, studentId: true, fullName: true },
+    orderBy: { fullName: 'asc' },
+  })
 
-  const totalPaid = fees.filter((f: any) => f.status === 'PAID').reduce((s: number, f: any) => s + f.amount, 0)
-  const totalDue = fees.filter((f: any) => f.status !== 'PAID').reduce((s: number, f: any) => s + f.amount, 0)
-  const overdueCount = fees.filter((f: any) => f.status === 'OVERDUE').length
+  // Authoritative server-side status computation for each fee record
+  const enrichedFees = fees.map((f) => {
+    const computed = computeFeeStatus(f)
+    return {
+      ...f,
+      computedStatus: computed,
+    }
+  })
 
-  const feeExportData = fees.map((f: any) => ({
+  const totalPaid = enrichedFees
+    .filter((f) => f.computedStatus === 'PAID')
+    .reduce((s, f) => s + f.amount, 0)
+  const totalDue = enrichedFees
+    .filter((f) => f.computedStatus === 'OVERDUE' || f.computedStatus === 'DUE')
+    .reduce((s, f) => s + f.amount, 0)
+  const overdueCount = enrichedFees.filter((f) => f.computedStatus === 'OVERDUE').length
+
+  const feeExportData = enrichedFees.map((f) => ({
     dueDate: f.dueDate,
     interval: f.interval || 'MONTHLY',
     studentId: f.student.studentId,
@@ -41,8 +62,8 @@ export default async function AdminFeesPage() {
       <div className="grid-3" style={{ marginBottom: '1.25rem' }}>
         {[
           { label: 'Collected', value: formatINR(totalPaid), color: '#10b981' },
-          { label: 'Outstanding', value: formatINR(totalDue), color: '#ef4444' },
-          { label: 'Overdue', value: overdueCount, color: '#fb923c' },
+          { label: 'Outstanding (Due/Overdue)', value: formatINR(totalDue), color: '#ef4444' },
+          { label: 'Overdue Count', value: overdueCount, color: '#fb923c' },
         ].map((m, i) => (
           <div key={i} className="card" style={{ borderTop: `3px solid ${m.color}` }}>
             <p style={{ color: '#64748b', fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.35rem' }}>{m.label}</p>
@@ -62,19 +83,19 @@ export default async function AdminFeesPage() {
               </tr>
             </thead>
             <tbody>
-              {fees.length === 0 ? (
+              {enrichedFees.length === 0 ? (
                 <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#475569' }}>No records. Click &quot;+ Add Fee Record&quot;.</td></tr>
-              ) : (fees as any[]).map(row => (
+              ) : enrichedFees.map(row => (
                 <tr key={row.id} className="roster-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                   <td style={{ padding: '0.55rem 0.75rem', color: '#94a3b8', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                    {new Date(row.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {formatDate(row.dueDate, 'medium')}
                   </td>
                   <td style={{ padding: '0.55rem 0.75rem', color: '#64748b', fontWeight: 700, fontSize: '0.6rem' }}>{row.interval || 'MONTHLY'}</td>
                   <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700, color: '#60a5fa', fontFamily: 'monospace', fontSize: '0.75rem' }}>{row.student.studentId}</td>
                   <td style={{ padding: '0.55rem 0.75rem', fontWeight: 600, color: '#e2e8f0', fontSize: '0.8rem' }}>{row.student.fullName}</td>
                   <td style={{ padding: '0.55rem 0.75rem', fontWeight: 700, fontSize: '0.85rem' }}>{formatINR(row.amount)}</td>
                   <td style={{ padding: '0.55rem 0.75rem' }}><FeeStatusControl feeId={row.id} status={row.status} /></td>
-                  <td style={{ padding: '0.55rem 0.75rem', color: '#475569', fontSize: '0.7rem' }}>{row.paymentDate ? new Date(row.paymentDate).toLocaleDateString('en-IN') : '—'}</td>
+                  <td style={{ padding: '0.55rem 0.75rem', color: '#475569', fontSize: '0.7rem' }}>{row.paymentDate ? formatDate(row.paymentDate, 'short') : '—'}</td>
                 </tr>
               ))}
             </tbody>

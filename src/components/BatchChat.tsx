@@ -8,8 +8,16 @@ import {
   getChatRecipientsAction,
   markMessagesReadAction,
   sendTypingIndicatorAction,
+  ChatMessageResult,
 } from '@/actions/chat'
 import { useToast } from './ToastProvider'
+
+export interface ChatRecipient {
+  id: string
+  name: string
+  sub: string
+  type: string
+}
 
 export default function BatchChat({
   batchType: initialBatch,
@@ -22,8 +30,8 @@ export default function BatchChat({
 }) {
   const [category, setCategory] = useState<'GLOBAL' | 'BATCH' | 'PRIVATE'>('GLOBAL')
   const [activeRecipient, setActiveRecipient] = useState<{ id: string; name: string } | null>(null)
-  const [recipients, setRecipients] = useState<any[]>([])
-  const [messages, setMessages] = useState<any[]>([])
+  const [recipients, setRecipients] = useState<ChatRecipient[]>([])
+  const [messages, setMessages] = useState<ChatMessageResult[]>([])
   const [content, setContent] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [sending, setSending] = useState(false)
@@ -61,7 +69,7 @@ export default function BatchChat({
   useEffect(() => {
     let mounted = true
     const fetchInitial = async () => {
-      const params: any = { category }
+      const params: { category: 'GLOBAL' | 'BATCH' | 'PRIVATE'; batchType?: string; recipientId?: string } = { category }
       if (category === 'BATCH') params.batchType = initialBatch
       if (category === 'PRIVATE') {
         if (!activeRecipient) {
@@ -155,7 +163,8 @@ export default function BatchChat({
             if (data.messages && data.messages.length > 0) {
               setMessages((prev) => {
                 const existingIds = new Set(prev.map((m) => m.id))
-                const newItems = data.messages.filter((m: any) => !existingIds.has(m.id))
+                const incoming = Array.isArray(data.messages) ? (data.messages as ChatMessageResult[]) : []
+                const newItems = incoming.filter((m) => !existingIds.has(m.id))
                 return newItems.length > 0 ? [...prev, ...newItems] : prev
               })
             }
@@ -195,7 +204,9 @@ export default function BatchChat({
     if ((!content.trim() && !file) || sending) return
     setSending(true)
 
-    const clientMsgId = `cmsg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    const clientMsgId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? `cmsg_${crypto.randomUUID()}`
+      : `cmsg_${Date.now()}`
     const formData = new FormData()
     formData.append('content', content)
     formData.append('category', category)
@@ -205,18 +216,21 @@ export default function BatchChat({
     if (file) formData.append('file', file)
 
     // Optimistic UI representation
-    const optimisticMsg = {
+    const optimisticMsg: ChatMessageResult = {
       id: clientMsgId,
       clientMsgId,
       content,
       senderName: isAdmin ? 'Admin' : 'You',
       isAdmin,
-      senderId: currentStudentId,
+      senderId: currentStudentId || null,
+      category,
+      batchType: category === 'BATCH' ? initialBatch : null,
+      recipientId: category === 'PRIVATE' && activeRecipient ? activeRecipient.id : null,
       fileUrl: file ? URL.createObjectURL(file) : null,
-      fileType: file?.type.startsWith('image/') ? 'IMAGE' : 'DOCUMENT',
-      fileName: file?.name,
+      fileType: file ? (file.type.startsWith('image/') ? 'IMAGE' : 'DOCUMENT') : null,
+      fileName: file?.name || null,
       status: 'SENT',
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     }
 
     setMessages((prev) => [...prev, optimisticMsg])

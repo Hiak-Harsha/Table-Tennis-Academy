@@ -16,7 +16,7 @@ export default async function AdminStudents() {
           Manage all registered athletes in the academy.
         </p>
       </div>
-      <StudentRosterClient students={students as any} />
+      <StudentRosterClient students={students} />
     </div>
   )
 }

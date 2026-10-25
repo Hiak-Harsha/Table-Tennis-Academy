@@ -1,10 +1,13 @@
 import prisma from './prisma'
+import type { Prisma } from '@prisma/client'
 
 /**
  * Generates an authoritative, collision-resistant student identification number (e.g. TTA-01001).
  * Uses monotonic sequence with gap detection to ensure consistent 5-digit zero-padded format.
  */
-export async function generateStudentId(txClient?: any): Promise<string> {
+export async function generateStudentId(
+  txClient?: Prisma.TransactionClient | typeof prisma
+): Promise<string> {
   const client = txClient || prisma
 
   const count = await client.student.count()

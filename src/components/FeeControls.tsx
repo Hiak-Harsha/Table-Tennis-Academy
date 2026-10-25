@@ -59,7 +59,10 @@ export function AddFeeModal({ students }: { students: { id: string; studentId: s
   const [state, formAction, pending] = useActionState(addFeeAction, null)
 
   useEffect(() => {
-    if (state?.success) setOpen(false)
+    if (state?.success) {
+      const timer = setTimeout(() => setOpen(false), 0)
+      return () => clearTimeout(timer)
+    }
   }, [state])
 
   useEffect(() => {

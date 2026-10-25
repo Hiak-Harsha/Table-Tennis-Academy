@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth-guard'
-import { assertValidPaymentTransition } from '@/lib/payment-state'
+import { assertValidPaymentTransition, PaymentState } from '@/lib/payment-state'
 import { writeAuditLog } from '@/lib/audit'
 import { realtimeBus } from '@/lib/realtime/bus'
 
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Payment already captured' }, { status: 200 })
     }
 
-    assertValidPaymentTransition(payment.status as any, 'CAPTURED')
+    assertValidPaymentTransition(payment.status as PaymentState, 'CAPTURED')
 
     const now = new Date()
     const receiptNo = `REC-SIM-${Date.now().toString(36).toUpperCase()}`

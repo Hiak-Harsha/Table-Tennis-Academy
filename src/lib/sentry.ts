@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Sentry & Error Monitoring Integration
  * 
@@ -16,6 +16,12 @@ export interface ErrorContext {
   extra?: Record<string, unknown>
 }
 
+interface SentryScope {
+  setUser: (user: { id?: string; role?: string }) => void
+  setTag: (key: string, value: string) => void
+  setExtras: (extras: Record<string, unknown>) => void
+}
+
 export function captureException(error: unknown, context?: ErrorContext): void {
   const err = error instanceof Error ? error : new Error(String(error))
 
@@ -24,7 +30,7 @@ export function captureException(error: unknown, context?: ErrorContext): void {
     try {
       // Dynamic import to avoid hard dependency failure if not installed
       const Sentry = require('@sentry/nextjs')
-      Sentry.withScope((scope: any) => {
+      Sentry.withScope((scope: SentryScope) => {
         if (context?.userId) {
           scope.setUser({ id: context.userId, role: context.role })
         }
@@ -66,11 +72,12 @@ export function captureMessage(message: string, level: 'info' | 'warning' | 'err
     }
   }
 
+  const logContext = context ? { ...context } : undefined
   if (level === 'error') {
-    logger.error(message, undefined, context as any)
+    logger.error(message, undefined, logContext)
   } else if (level === 'warning') {
-    logger.warn(message, context as any)
+    logger.warn(message, logContext)
   } else {
-    logger.info(message, context as any)
+    logger.info(message, logContext)
   }
 }

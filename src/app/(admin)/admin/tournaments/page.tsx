@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma'
 import { requireRoleOrRedirect } from '@/lib/auth-guard'
 import CreateTournamentModal from '@/components/CreateTournamentModal'
 import { formatINR } from '@/lib/currency'
+import { formatDate } from '@/lib/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,16 +31,23 @@ export default async function AdminTournaments() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {tournaments.map((t: any) => (
+          {tournaments.map((t) => (
             <div key={t.id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: '1rem' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                   <span style={{ background: 'rgba(59,130,246,0.1)', color: 'hsl(var(--accent-blue))', padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase' }}>{t.level}</span>
-                  <span style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700 }}>{t.participants.length} Reg</span>
+                  <span style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700 }}>
+                    {t.maxPlayers ? `${t.participants.length} / ${t.maxPlayers} Spots` : `${t.participants.length} Reg`}
+                  </span>
+                  {t.registrationDeadline && (
+                    <span style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700 }}>
+                      Deadline: {formatDate(t.registrationDeadline, 'short')}
+                    </span>
+                  )}
                 </div>
                 <h3 style={{ fontSize: '0.95rem', marginBottom: '0.25rem' }}>{t.name}</h3>
-                <div style={{ display: 'flex', gap: '1rem', color: 'hsl(var(--text-secondary))', fontSize: '0.75rem' }}>
-                  <span>📅 {new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                <div style={{ display: 'flex', gap: '1rem', color: 'hsl(var(--text-secondary))', fontSize: '0.75rem', flexWrap: 'wrap' }}>
+                  <span>📅 {formatDate(t.date, 'medium')}</span>
                   <span>📍 {t.venue}</span>
                 </div>
               </div>

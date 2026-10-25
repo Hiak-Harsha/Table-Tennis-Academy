@@ -8,7 +8,7 @@ import { FeeSchema } from '@/lib/validations'
 import { writeAuditLog } from '@/lib/audit'
 import { z } from 'zod'
 
-export async function addFeeAction(prevState: any, formData: FormData) {
+export async function addFeeAction(_prevState: unknown, formData: FormData) {
   try {
     await requireAdmin()
 
@@ -34,9 +34,10 @@ export async function addFeeAction(prevState: any, formData: FormData) {
     revalidatePath('/admin/fees')
     revalidatePath('/student/fees')
     return { success: `Fee of ${formatINR(amountInPaise)} added.` }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message }
-    return { error: error.message || 'Operation failed' }
+    const message = error instanceof Error ? error.message : 'Operation failed'
+    return { error: message }
   }
 }
 
@@ -64,7 +65,8 @@ export async function updateFeeStatusAction(feeId: string, status: string) {
     revalidatePath('/admin/fees')
     revalidatePath('/student/fees')
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message || 'Status update failed.' }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Status update failed.'
+    return { error: message }
   }
 }

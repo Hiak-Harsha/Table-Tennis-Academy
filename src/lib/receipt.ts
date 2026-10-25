@@ -121,7 +121,7 @@ export async function getVerifiedReceipt(receiptNo: string): Promise<VerifiedRec
       studentName: directPayment.student.fullName,
       studentId: directPayment.student.studentId,
       batchType: directPayment.student.batchType,
-      purpose: (directPayment.purpose as any) || 'PAYMENT',
+      purpose: directPayment.purpose === 'FEE' || directPayment.purpose === 'TOURNAMENT' ? directPayment.purpose : 'PAYMENT',
       itemTitle: `${directPayment.purpose} Payment`,
       amountPaise: directPayment.amount,
       paymentDate: directPayment.capturedAt,

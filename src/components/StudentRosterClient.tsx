@@ -99,8 +99,8 @@ export default function StudentRosterClient({ students }: { students: Student[] 
           </select>
 
           <div style={{ display: 'flex', background: 'hsl(var(--bg-card))', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
-            {['grid', 'table'].map(v => (
-              <button key={v} onClick={() => setView(v as any)} style={{
+            {(['grid', 'table'] as const).map(v => (
+              <button key={v} onClick={() => setView(v)} style={{
                 padding: '0.6rem 0.85rem', background: view === v ? 'rgba(255,255,255,0.08)' : 'transparent',
                 border: 'none', color: view === v ? '#fff' : 'hsl(var(--text-muted))', cursor: 'pointer', transition: '0.2s', fontSize: '0.85rem'
               }}>
