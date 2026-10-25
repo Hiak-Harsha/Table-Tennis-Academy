@@ -2,7 +2,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { requireAny } from '@/lib/auth-guard'
+import { requireAuth } from '@/lib/auth-guard'
 import { ChatMessageSchema } from '@/lib/validations'
 import { validateUploadedFile } from '@/lib/file-security'
 import { saveUploadedFile } from '@/lib/storage'
@@ -10,9 +10,30 @@ import { realtimeBus } from '@/lib/realtime/bus'
 import { getDmChannelName } from '@/lib/realtime/authz'
 import { z } from 'zod'
 
+export interface ChatMessageResult {
+  id: string
+  clientMsgId: string | null
+  content: string | null
+  senderId: string | null
+  senderName: string
+  isAdmin: boolean
+  category: string
+  batchType: string | null
+  recipientId: string | null
+  fileUrl: string | null
+  fileName: string | null
+  fileType: string | null
+  status: string
+  createdAt: Date
+}
+
+/**
+ * Sends a chat message with idempotency, file attachment validation,
+ * role authorization, and immediate real-time dispatch.
+ */
 export async function sendChatMessageAction(formData: FormData) {
   try {
-    const session = await requireAny()
+    const session = await requireAuth()
 
     // Validate and sanitize text parameters
     const validated = ChatMessageSchema.parse({
@@ -60,20 +81,24 @@ export async function sendChatMessageAction(formData: FormData) {
       return { error: 'Message payload cannot be empty.' }
     }
 
-    const senderName =
-      session.role === 'ADMIN'
-        ? 'Academy Admin'
-        : (await prisma.student.findUnique({ where: { userId: session.id } }))?.fullName || 'Athlete'
-    const senderId =
-      session.role === 'STUDENT'
-        ? (await prisma.student.findUnique({ where: { userId: session.id } }))?.id
-        : null
+    let senderName = 'Academy Admin'
+    let senderId: string | null = null
+    let authoritativeBatchType = validated.batchType
 
-    // SECURITY: If BATCH, verify student belongs to that batch
-    if (validated.category === 'BATCH' && session.role === 'STUDENT') {
+    if (session.role === 'STUDENT') {
       const student = await prisma.student.findUnique({ where: { userId: session.id } })
-      if (student?.batchType !== validated.batchType) {
-        return { error: 'Unauthorized: Batch synchronization violation.' }
+      if (!student) {
+        return { error: 'Athlete profile not found.' }
+      }
+      senderName = student.fullName
+      senderId = student.id
+
+      // SECURITY: If BATCH, force authoritative student batchType
+      if (validated.category === 'BATCH') {
+        if (!student.batchType) {
+          return { error: 'Unauthorized: Athlete has no assigned training tier.' }
+        }
+        authoritativeBatchType = student.batchType
       }
     }
 
@@ -82,10 +107,10 @@ export async function sendChatMessageAction(formData: FormData) {
         clientMsgId,
         content: validated.content,
         category: validated.category,
-        batchType: validated.batchType,
+        batchType: authoritativeBatchType,
         recipientId: validated.recipientId,
-        senderName: senderName,
-        senderId: senderId,
+        senderName,
+        senderId,
         isAdmin: session.role === 'ADMIN',
         fileUrl,
         fileName,
@@ -96,8 +121,8 @@ export async function sendChatMessageAction(formData: FormData) {
 
     // Instant Real-Time Event Dispatching (<50ms)
     let channel = 'global'
-    if (validated.category === 'BATCH' && validated.batchType) {
-      channel = `batch:${validated.batchType}`
+    if (validated.category === 'BATCH' && authoritativeBatchType) {
+      channel = `batch:${authoritativeBatchType}`
     } else if (validated.category === 'PRIVATE' && validated.recipientId) {
       const myParticipantId = senderId || 'ADMIN'
       channel = getDmChannelName(myParticipantId, validated.recipientId)
@@ -131,20 +156,32 @@ export async function sendChatMessageAction(formData: FormData) {
   }
 }
 
+/**
+ * Retrieves chat messages for a channel with strict batch privacy
+ * and cursor pagination showing the most recent messages.
+ */
 export async function getChatMessagesAction(params: {
   category: string
   batchType?: string
   recipientId?: string
   cursor?: string
   limit?: number
-}) {
+}): Promise<ChatMessageResult[]> {
   try {
-    const session = await requireAny()
+    const session = await requireAuth()
 
     const where: any = { category: params.category }
 
     if (params.category === 'BATCH') {
-      where.batchType = params.batchType
+      if (session.role === 'STUDENT') {
+        const student = await prisma.student.findUnique({ where: { userId: session.id } })
+        if (!student?.batchType) return []
+        // Strictly use student's assigned batchType; prevent eavesdropping on other batches
+        where.batchType = student.batchType
+      } else {
+        // Admin can view any batch
+        where.batchType = params.batchType
+      }
     } else if (params.category === 'PRIVATE') {
       if (!params.recipientId) return []
 
@@ -172,39 +209,78 @@ export async function getChatMessagesAction(params: {
 
     const limit = Math.min(params.limit || 50, 100)
 
+    // Cursor pagination: fetch latest messages in descending order, then reverse to chronological
     const messages = await prisma.chatMessage.findMany({
       where,
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
       take: limit,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
     })
 
-    return messages
-  } catch {
+    // Return chronological order (oldest to newest) for proper chat window rendering
+    return messages.reverse()
+  } catch (err) {
+    console.warn('[CHAT] Error fetching messages:', err)
     return []
   }
 }
 
+/**
+ * Retrieves chat recipient list.
+ * Students receive Coach/Admin + peers in their OWN batch ONLY.
+ * Admins receive all students.
+ */
 export async function getChatRecipientsAction() {
   try {
-    const session = await requireAny()
-    const students = await prisma.student.findMany({
-      select: { id: true, fullName: true, studentId: true, batchType: true },
-    })
-
-    const recipients = students.map((s: any) => ({
-      id: s.id,
-      name: s.fullName,
-      sub: `${s.batchType} Tier`,
-      type: 'STUDENT',
-    }))
+    const session = await requireAuth()
 
     if (session.role === 'STUDENT') {
-      recipients.unshift({ id: 'ADMIN', name: 'Academy Admin', sub: 'Official Support', type: 'ADMIN' })
+      const student = await prisma.student.findUnique({ where: { userId: session.id } })
+      if (!student) return []
+
+      const peers = await prisma.student.findMany({
+        where: {
+          batchType: student.batchType,
+          id: { not: student.id },
+          enrollmentStatus: 'ACTIVE',
+        },
+        select: { id: true, fullName: true, studentId: true, batchType: true },
+        orderBy: { fullName: 'asc' },
+      })
+
+      const recipients = peers.map((s) => ({
+        id: s.id,
+        name: s.fullName,
+        sub: `${s.batchType} Peer`,
+        type: 'STUDENT',
+      }))
+
+      // Prepend official Academy Admin/Coach desk
+      recipients.unshift({
+        id: 'ADMIN',
+        name: 'Coach & Academy Desk',
+        sub: 'Official Support',
+        type: 'ADMIN',
+      })
+
+      return recipients
     }
 
-    return recipients
-  } catch {
+    // Admin role: lists all active students
+    const students = await prisma.student.findMany({
+      where: { enrollmentStatus: 'ACTIVE' },
+      select: { id: true, fullName: true, studentId: true, batchType: true },
+      orderBy: { fullName: 'asc' },
+    })
+
+    return students.map((s) => ({
+      id: s.id,
+      name: s.fullName,
+      sub: `${s.batchType} (${s.studentId})`,
+      type: 'STUDENT',
+    }))
+  } catch (err) {
+    console.warn('[CHAT] Error fetching recipients:', err)
     return []
   }
 }
@@ -214,7 +290,7 @@ export async function getChatRecipientsAction() {
  */
 export async function markMessagesReadAction(params: { messageIds: string[]; channel: string }) {
   try {
-    const session = await requireAny()
+    const session = await requireAuth()
     if (!params.messageIds || params.messageIds.length === 0) return { success: true }
 
     await prisma.$transaction([
@@ -251,7 +327,7 @@ export async function markMessagesReadAction(params: { messageIds: string[]; cha
  */
 export async function sendTypingIndicatorAction(params: { channel: string }) {
   try {
-    const session = await requireAny()
+    const session = await requireAuth()
     realtimeBus.publish(params.channel, 'chat.typing', {
       userId: session.id,
       timestamp: Date.now(),
@@ -259,5 +335,35 @@ export async function sendTypingIndicatorAction(params: { channel: string }) {
     return { success: true }
   } catch {
     return { success: false }
+  }
+}
+
+/**
+ * Retrieves total unread message count for the authenticated user
+ */
+export async function getUnreadChatCountAction(): Promise<number> {
+  try {
+    const session = await requireAuth()
+
+    if (session.role === 'ADMIN') {
+      return await prisma.chatMessage.count({
+        where: {
+          recipientId: 'ADMIN',
+          status: 'SENT',
+        },
+      })
+    }
+
+    const student = await prisma.student.findUnique({ where: { userId: session.id } })
+    if (!student) return 0
+
+    return await prisma.chatMessage.count({
+      where: {
+        recipientId: student.id,
+        status: 'SENT',
+      },
+    })
+  } catch {
+    return 0
   }
 }

@@ -86,8 +86,39 @@ export default function NotificationBell({ userId: initialUserId }: { userId?: s
       }
     })
 
+    // Serverless Resiliency: Automatic short-polling fallback when SSE connection drops
+    let pollInterval: NodeJS.Timeout | null = null
+    eventSource.onerror = () => {
+      if (!pollInterval) {
+        pollInterval = setInterval(async () => {
+          try {
+            const since = new Date(Date.now() - 10000).toISOString()
+            const res = await fetch(
+              `/api/realtime/poll?channels=${encodeURIComponent(channels)}&since=${encodeURIComponent(since)}`
+            )
+            if (!res.ok) return
+            const data = await res.json()
+            if (data.notifications && data.notifications.length > 0) {
+              setNotifications((prev) => {
+                const existingIds = new Set(prev.map((n) => n.id))
+                const newItems = data.notifications.filter((n: any) => !existingIds.has(n.id))
+                if (newItems.length > 0) {
+                  setUnreadCount((count) => count + newItems.length)
+                  return [...newItems, ...prev]
+                }
+                return prev
+              })
+            }
+          } catch {
+            // Polling network blip
+          }
+        }, 8000)
+      }
+    }
+
     return () => {
       eventSource.close()
+      if (pollInterval) clearInterval(pollInterval)
     }
   }, [userId, showToast])
 

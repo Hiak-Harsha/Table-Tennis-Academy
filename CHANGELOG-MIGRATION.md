@@ -89,6 +89,25 @@ All breaking changes, schema modifications, security updates, and URL/env variab
 
 ---
 
+## Phase C: Real-Time & Chat Hardening on Serverless (Completed & Verified)
+
+### 1. Chat Batch Privacy & Recipient Isolation (Fixes D1)
+- **Authoritative Batch Derivation**: In `getChatMessagesAction`, student callers are strictly constrained to their own database-assigned `batchType`. Client-provided `batchType` values are ignored for students, closing the batch chat eavesdropping hole. Admins retain ability to inspect any batch.
+- **Recipient Isolation**: In `getChatRecipientsAction`, students only receive official Academy/Coach support and fellow peers enrolled in their SAME training batch. Cross-batch rosters are concealed from student callers. Admins retain full roster access.
+- **Explicit Role Guards**: Replaced loose `requireAny()` with strict `requireAuth()` across chat actions.
+- **Error Propagation**: Removed silent exception swallowing (`catch { return [] }`); actions return structured error payloads and log warnings.
+
+### 2. Reverse Cursor Pagination & Read Receipts (Fixes D1)
+- Replaced ascending older-message fetch with reverse cursor pagination: queries latest messages in descending order (`orderBy: { createdAt: 'desc' }`) and reverses to chronological order, ensuring users immediately see the most recent rallies rather than historical messages from weeks ago.
+- Real read receipts: `markMessagesReadAction` updates `status: 'READ'` and persists `ChatReadReceipt` records; UI dynamically displays green double checkmarks (`✓✓`) for confirmed read messages and single checkmarks (`✓`) for sent messages.
+
+### 3. Serverless Transport Resiliency & DB Polling Fallback (Fixes D2)
+- Added `src/lib/realtime/token.ts` with `signRealtimeToken` issuing signed capability tokens for verified subscribers.
+- Built capability token endpoint `POST /api/realtime/token` enforcing `authorizeChannelSubscription` matrix.
+- Built database-backed short-polling fallback route `GET /api/realtime/poll`: when SSE streams disconnect or drop on ephemeral serverless platforms (e.g. Vercel function timeout), client components (`BatchChat.tsx`, `NotificationBell.tsx`) automatically poll for new messages and notifications every 5-8s without missing updates.
+
+---
+
 ## Phase 0: Safety Net & Hygiene (Completed)
 
 ### 1. Security & Hygiene Removals

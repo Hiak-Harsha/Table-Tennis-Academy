@@ -140,8 +140,35 @@ export default function BatchChat({
       typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000)
     })
 
+    // Serverless Resiliency: Automatic short-polling fallback when SSE connection drops
+    let pollInterval: NodeJS.Timeout | null = null
+    eventSource.onerror = () => {
+      if (!pollInterval) {
+        pollInterval = setInterval(async () => {
+          try {
+            const since = new Date(Date.now() - 10000).toISOString()
+            const res = await fetch(
+              `/api/realtime/poll?channels=${encodeURIComponent(channel)}&since=${encodeURIComponent(since)}`
+            )
+            if (!res.ok) return
+            const data = await res.json()
+            if (data.messages && data.messages.length > 0) {
+              setMessages((prev) => {
+                const existingIds = new Set(prev.map((m) => m.id))
+                const newItems = data.messages.filter((m: any) => !existingIds.has(m.id))
+                return newItems.length > 0 ? [...prev, ...newItems] : prev
+              })
+            }
+          } catch {
+            // Polling network blip; continue next cycle
+          }
+        }, 5000)
+      }
+    }
+
     return () => {
       eventSource.close()
+      if (pollInterval) clearInterval(pollInterval)
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     }
   }, [getActiveChannel, isAdmin, currentStudentId])
